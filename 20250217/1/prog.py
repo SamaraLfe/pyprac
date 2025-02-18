@@ -44,6 +44,28 @@ def parse_tree(body):
         entries.append((obj_type, sha, name))
     return entries
 
+def show_commit_history(repo_path, commit_sha):
+    kind, body = read_git_object(repo_path, commit_sha)
+    if kind != "commit":
+        return
+    commit_lines = body.decode('utf-8', errors='replace').split('\n')
+    tree_line = next((line for line in commit_lines if line.startswith('tree ')), None)
+    if not tree_line:
+        return
+    tree_sha = tree_line.split()[1]
+    print(f"TREE for commit {commit_sha}")
+    kind, tree_body = read_git_object(repo_path, tree_sha)
+    if kind != "tree":
+        return
+    entries = parse_tree(tree_body)
+    for obj_type, sha, name in entries:
+        print(f"{obj_type} {sha}    {name}")
+    parent_line = next((line for line in commit_lines if line.startswith('parent ')), None)
+    if parent_line:
+        print()
+        parent_sha = parent_line.split()[1]
+        show_commit_history(repo_path, parent_sha)
+
 def show_last_commit(repo_path, branch):
     ref_path = os.path.join(repo_path, ".git", "refs", "heads", branch)
     if not os.path.exists(ref_path):
@@ -51,28 +73,21 @@ def show_last_commit(repo_path, branch):
         return
     with open(ref_path, "r") as f:
         commit_sha = f.read().strip()
-
     kind, body = read_git_object(repo_path, commit_sha)
     if kind != "commit":
-        print("Объект не является коммитом:", commit_sha)
         return
-
-    print(body.decode().strip())
-
-    tree_line = next((line for line in body.decode().split('\n') if line.startswith('tree ')), None)
+    print(body.decode('utf-8', errors='replace').strip())
+    tree_line = next((line for line in body.decode('utf-8', errors='replace').split('\n') if line.startswith('tree ')), None)
     if not tree_line:
-        print("Не найдена строка с деревом в коммите")
         return
     tree_sha = tree_line.split()[1]
-
     kind, tree_body = read_git_object(repo_path, tree_sha)
     if kind != "tree":
-        print("Объект не является деревом:", tree_sha)
         return
-
     entries = parse_tree(tree_body)
     for obj_type, sha, name in entries:
-        print(f"{obj_type} {sha}    {name}")
+        print("\n" f"{obj_type} {sha}    {name}", end = '\n\n')
+    show_commit_history(repo_path, commit_sha)
 
 if len(sys.argv) < 2:
     print("Нет пути к репозиторию")
