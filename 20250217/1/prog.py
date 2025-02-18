@@ -12,12 +12,37 @@ def list_branches(repo_path):
 
 def read_git_object(repo_path, sha):
     obj_path = os.path.join(repo_path, ".git", "objects", sha[:2], sha[2:])
+    if not os.path.exists(obj_path):
+        print(f"Объект {sha} не найден")
+        return None, None
     with open(obj_path, "rb") as f:
         compressed = f.read()
     raw = zlib.decompress(compressed)
     header, _, body = raw.partition(b'\x00')
     kind, _ = header.split()
-    return kind.decode(), body.decode()
+    return kind.decode(), body
+
+def parse_tree(body):
+    entries = []
+    pos = 0
+    while pos < len(body):
+        mode_end = body.find(b' ', pos)
+        if mode_end == -1:
+            break
+        mode = body[pos:mode_end].decode()
+        pos = mode_end + 1
+        name_end = body.find(b'\x00', pos)
+        if name_end == -1:
+            break
+        name = body[pos:name_end].decode('utf-8', errors='replace')
+        pos = name_end + 1
+        if pos + 20 > len(body):
+            break
+        sha = body[pos:pos+20].hex()
+        pos += 20
+        obj_type = "blob" if mode.startswith("100") else "tree"
+        entries.append((obj_type, sha, name))
+    return entries
 
 def show_last_commit(repo_path, branch):
     ref_path = os.path.join(repo_path, ".git", "refs", "heads", branch)
@@ -32,7 +57,22 @@ def show_last_commit(repo_path, branch):
         print("Объект не является коммитом:", commit_sha)
         return
 
-    print(body.strip())
+    print(body.decode().strip())
+
+    tree_line = next((line for line in body.decode().split('\n') if line.startswith('tree ')), None)
+    if not tree_line:
+        print("Не найдена строка с деревом в коммите")
+        return
+    tree_sha = tree_line.split()[1]
+
+    kind, tree_body = read_git_object(repo_path, tree_sha)
+    if kind != "tree":
+        print("Объект не является деревом:", tree_sha)
+        return
+
+    entries = parse_tree(tree_body)
+    for obj_type, sha, name in entries:
+        print(f"{obj_type} {sha}    {name}")
 
 if len(sys.argv) < 2:
     print("Нет пути к репозиторию")
