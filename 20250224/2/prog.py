@@ -1,6 +1,7 @@
 import sys
 import cowsay
 
+
 class Person:
     def __init__(self, x, y):
         self.x = x
@@ -9,13 +10,20 @@ class Person:
     def get_position(self):
         return (self.x, self.y)
 
+
 class Monster(Person):
-    def __init__(self, x, y, hello):
+    def __init__(self, x, y, name, hello):
         super().__init__(x, y)
+        self.name = name
         self.hello = hello
 
     def encounter(self):
+<<<<<<< HEAD
         print(cowsay.cowsay(self.hello))
+=======
+        print(cowsay.cowsay(self.hello, cow=self.name))
+>>>>>>> 1945f4e (add check monster name)
+
 
 class Gamer(Person):
     def __init__(self, x, y):
@@ -31,17 +39,18 @@ class Gamer(Person):
         elif direction == "right":
             self.x = (self.x + 1) % 10
 
+
 class Game:
     def __init__(self):
-        self.field = {}
+        self.field = {}  # (x, y) -> Monster
         self.player = Gamer(0, 0)
 
-    def add_monster(self, x, y, hello):
+    def add_monster(self, x, y, name, hello):
         if not (0 <= x <= 9 and 0 <= y <= 9):
             return False
         key = (x, y)
         replaced = key in self.field
-        self.field[key] = Monster(x, y, hello)
+        self.field[key] = Monster(x, y, name, hello)
         return replaced
 
     def process_command(self, command):
@@ -61,14 +70,18 @@ class Game:
             if (x, y) in self.field:
                 self.field[(x, y)].encounter()
         elif cmd == "addmon":
-            if len(parts) != 4:
+            if len(parts) != 5:
                 print("Invalid arguments")
                 return
             try:
-                x, y = int(parts[1]), int(parts[2])
-                hello = parts[3]
-                replaced = self.add_monster(x, y, hello)
-                print(f"Added monster to ({x}, {y}) saying {hello}")
+                name = parts[1]
+                x, y = int(parts[2]), int(parts[3])
+                hello = parts[4]
+                if name not in cowsay.list_cows():
+                    print("Cannot add unknown monster")
+                    return
+                replaced = self.add_monster(x, y, name, hello)
+                print(f"Added monster {name} to ({x}, {y}) saying {hello}")
                 if replaced:
                     print("Replaced the old monster")
             except ValueError:
@@ -76,10 +89,12 @@ class Game:
         else:
             print("Invalid command")
 
+
 def main():
     game = Game()
     for line in sys.stdin:
         game.process_command(line)
+
 
 if __name__ == "__main__":
     main()
