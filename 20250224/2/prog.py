@@ -18,11 +18,7 @@ class Monster(Person):
         self.hello = hello
 
     def encounter(self):
-<<<<<<< HEAD
-        print(cowsay.cowsay(self.hello))
-=======
-        print(cowsay.cowsay(self.hello, cow=self.name))
->>>>>>> 1945f4e (add check monster name)
+        print(cowsay.cowsay(self.hello, self.name))
 
 
 class Gamer(Person):
@@ -42,7 +38,7 @@ class Gamer(Person):
 
 class Game:
     def __init__(self):
-        self.field = {}  # (x, y) -> Monster
+        self.field = {}
         self.player = Gamer(0, 0)
 
     def add_monster(self, x, y, name, hello):
