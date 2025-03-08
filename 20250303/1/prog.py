@@ -94,8 +94,6 @@ class Game:
                 return
             try:
                 name = parts[1]
-                x, y = int(parts[2]), int(parts[3])
-                hello = parts[4]
                 if name not in self.valid_monsters:
                     print("Cannot add unknown monster")
                     return
