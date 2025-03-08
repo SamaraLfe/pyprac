@@ -1,5 +1,20 @@
 import sys
 import cowsay
+from io import StringIO
+
+jgsbat = cowsay.read_dot_cow(StringIO("""
+$the_cow = <<EOC;
+    ,_                    _,
+    ) '-._  ,_    _,  _.-' (
+    )  _.-'.|\\--//|.'-._  (
+     )'   .'\\/o\\/o\\/'.   `(
+      ) .' . \\====/ . '. (
+       )  / <<    >> \\  (
+        '-._/``  ``\\_.-'
+  jgs     __\\'--'//__
+         (((""`  `"")))
+EOC
+"""))
 
 
 class Person:
@@ -18,7 +33,10 @@ class Monster(Person):
         self.hello = hello
 
     def encounter(self):
-        print(cowsay.cowsay(self.hello, self.name))
+        if self.name == "jgsbat":
+            print(cowsay.cowsay(self.hello, cowfile=jgsbat))
+        else:
+            print(cowsay.cowsay(self.hello, cow=self.name))
 
 
 class Gamer(Person):
@@ -40,6 +58,7 @@ class Game:
     def __init__(self):
         self.field = {}
         self.player = Gamer(0, 0)
+        self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
 
     def add_monster(self, x, y, name, hello):
         if not (0 <= x <= 9 and 0 <= y <= 9):
@@ -73,7 +92,7 @@ class Game:
                 name = parts[1]
                 x, y = int(parts[2]), int(parts[3])
                 hello = parts[4]
-                if name not in cowsay.list_cows():
+                if name not in self.valid_monsters:
                     print("Cannot add unknown monster")
                     return
                 replaced = self.add_monster(x, y, name, hello)
