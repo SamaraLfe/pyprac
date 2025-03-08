@@ -1,5 +1,6 @@
 import sys
 import cowsay
+import shlex
 
 
 class Person:
@@ -53,7 +54,7 @@ class Game:
         return replaced
 
     def process_command(self, command):
-        parts = command.strip().split()
+        parts = shlex.split(command.strip())
         if not parts:
             print("Invalid command")
             return
@@ -69,17 +70,40 @@ class Game:
             if (x, y) in self.field:
                 self.field[(x, y)].encounter()
         elif cmd == "addmon":
-            if len(parts) != 5:
+            if len(parts) < 7:
                 print("Invalid arguments")
                 return
             try:
                 name = parts[1]
-                x, y = int(parts[2]), int(parts[3])
-                hello = parts[4]
                 if name not in cowsay.list_cows():
                     print("Cannot add unknown monster")
                     return
-                replaced = self.add_monster(x, y, name, hello)
+                hello = None
+                hitpoints = None
+                x = None
+                y = None
+                i = 2
+                while i < len(parts):
+                    if parts[i] == "hello" and i + 1 < len(parts):
+                        hello = parts[i + 1]
+                        i += 2
+                    elif parts[i] == "hp" and i + 1 < len(parts):
+                        hitpoints = int(parts[i + 1])
+                        i += 2
+                    elif parts[i] == "coords" and i + 2 < len(parts):
+                        x = int(parts[i + 1])
+                        y = int(parts[i + 2])
+                        i += 3
+                    else:
+                        print("Invalid arguments")
+                        return
+                if hello is None or hitpoints is None or x is None or y is None:
+                    print("Missing required arguments")
+                    return
+                if hitpoints <= 0:
+                    print("Hitpoints must be positive")
+                    return
+                replaced = self.add_monster(x, y, name, hello, hitpoints)
                 print(f"Added monster {name} to ({x}, {y}) saying {hello}")
                 if replaced:
                     print("Replaced the old monster")
