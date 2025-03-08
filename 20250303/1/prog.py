@@ -27,10 +27,11 @@ class Person:
 
 
 class Monster(Person):
-    def __init__(self, x, y, name, hello):
+    def __init__(self, x, y, name, hello, hitpoints):
         super().__init__(x, y)
         self.name = name
         self.hello = hello
+        self.hitpoints = hitpoints
 
     def encounter(self):
         if self.name == "jgsbat":
@@ -60,12 +61,14 @@ class Game:
         self.player = Gamer(0, 0)
         self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
 
-    def add_monster(self, x, y, name, hello):
+    def add_monster(self, x, y, name, hello, hitpoints):
         if not (0 <= x <= 9 and 0 <= y <= 9):
+            return False
+        if hitpoints <= 0:
             return False
         key = (x, y)
         replaced = key in self.field
-        self.field[key] = Monster(x, y, name, hello)
+        self.field[key] = Monster(x, y, name, hello, hitpoints)
         return replaced
 
     def process_command(self, command):
