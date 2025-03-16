@@ -163,6 +163,14 @@ class MudCmd(cmd.Cmd):
         except ValueError:
             print("Invalid arguments")
 
+    def complete_addmon(self, text, line, begidx, endidx):
+        args = shlex.split(line[:begidx])
+        if len(args) == 1:
+            return [name for name in self.game.valid_monsters if name.startswith(text)]
+        keywords = ["hp", "coords", "hello"]
+        used = set(arg for arg in args[1:] if arg in keywords)
+        return [kw for kw in keywords if kw not in used and kw.startswith(text)]
+
     def do_quit(self, arg):
         print("Goodbye!")
         return True
