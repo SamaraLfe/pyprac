@@ -72,6 +72,21 @@ class Game:
         self.field[key] = Monster(x, y, name, hello, hitpoints)
         return replaced
 
+    def attack_monster(self, damage):
+        pos = self.player.get_position()
+        if pos not in self.field:
+            print("No monster here")
+            return
+        monster = self.field[pos]
+        actual_damage = min(damage, monster.hitpoints)
+        monster.hitpoints -= actual_damage
+        print(f"Attacked {monster.name}, damage {actual_damage} hp")
+        if monster.hitpoints == 0:
+            print(f"{monster.name} died")
+            del self.field[pos]
+        else:
+            print(f"{monster.name} now has {monster.hitpoints}")
+
 
 class MudCmd(cmd.Cmd):
     prompt = "(MUD) "
@@ -170,6 +185,12 @@ class MudCmd(cmd.Cmd):
         keywords = ["hp", "coords", "hello"]
         used = set(arg for arg in args[1:] if arg in keywords)
         return [kw for kw in keywords if kw not in used and kw.startswith(text)]
+
+    def do_attack(self, arg):
+        if arg:
+            print("Invalid arguments")
+            return
+        self.game.attack_monster(10)
 
     def do_quit(self, arg):
         print("Goodbye!")
