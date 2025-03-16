@@ -73,10 +73,10 @@ class Game:
         self.field[key] = Monster(x, y, name, hello, hitpoints)
         return replaced
 
-    def attack_monster(self, damage):
+    def attack_monster(self, monster_name, damage):
         pos = self.player.get_position()
-        if pos not in self.field:
-            print("No monster here")
+        if pos not in self.field or self.field[pos].name != monster_name:
+            print(f"No {monster_name} here")
             return
         monster = self.field[pos]
         actual_damage = min(damage, monster.hitpoints)
@@ -189,23 +189,26 @@ class MudCmd(cmd.Cmd):
 
     def do_attack(self, arg):
         parts = shlex.split(arg)
-        weapon = "sword"  # Default weapon
-        if parts:
-            if len(parts) != 2 or parts[0] != "with":
-                print("Invalid arguments")
-                return
-            weapon = parts[1]
+        if len(parts) < 1 or len(parts) > 3 or (len(parts) == 3 and parts[1] != "with"):
+            print("Invalid arguments")
+            return
+        monster_name = parts[0]
+        weapon = "sword"
+        if len(parts) == 3:
+            weapon = parts[2]
             if weapon not in self.game.weapons:
                 print("Unknown weapon")
                 return
-        self.game.attack_monster(self.game.weapons[weapon])
+        self.game.attack_monster(monster_name, self.game.weapons[weapon])
 
     def complete_attack(self, text, line, begidx, endidx):
         args = shlex.split(line[:begidx])
-        if len(args) == 2 and args[1] == "with":
-            return [w for w in self.game.weapons if w.startswith(text)]
-        elif len(args) == 1:
+        if len(args) <= 1:
+            return [name for name in self.game.valid_monsters if name.startswith(text)]
+        elif len(args) == 2:
             return ["with"] if "with".startswith(text) else []
+        elif len(args) == 3 and args[2] == "with":
+            return [w for w in self.game.weapons if w.startswith(text)]
         return []
 
     def do_quit(self, arg):
