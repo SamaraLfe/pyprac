@@ -1,6 +1,6 @@
-import sys
 import cowsay
 import shlex
+import cmd
 from io import StringIO
 
 jgsbat = cowsay.read_dot_cow(StringIO("""
@@ -72,72 +72,105 @@ class Game:
         self.field[key] = Monster(x, y, name, hello, hitpoints)
         return replaced
 
-    def process_command(self, command):
-        parts = shlex.split(command.strip())
-        if not parts:
-            print("Invalid command")
+
+class MudCmd(cmd.Cmd):
+    prompt = "(MUD) "
+    intro = "<<< Welcome to Python-MUD 0.1 >>>"
+
+    def __init__(self):
+        super().__init__()
+        self.game = Game()
+
+    def do_up(self, arg):
+        if arg:
+            print("Invalid arguments")
             return
+        self.game.player.move("up")
+        x, y = self.game.player.get_position()
+        print(f"Moved to ({x}, {y})")
+        if (x, y) in self.game.field:
+            self.game.field[(x, y)].encounter()
 
-        cmd = parts[0]
-        if cmd in ["up", "down", "left", "right"]:
-            if len(parts) != 1:
-                print("Invalid arguments")
+    def do_down(self, arg):
+        if arg:
+            print("Invalid arguments")
+            return
+        self.game.player.move("down")
+        x, y = self.game.player.get_position()
+        print(f"Moved to ({x}, {y})")
+        if (x, y) in self.game.field:
+            self.game.field[(x, y)].encounter()
+
+    def do_left(self, arg):
+        if arg:
+            print("Invalid arguments")
+            return
+        self.game.player.move("left")
+        x, y = self.game.player.get_position()
+        print(f"Moved to ({x}, {y})")
+        if (x, y) in self.game.field:
+            self.game.field[(x, y)].encounter()
+
+    def do_right(self, arg):
+        if arg:
+            print("Invalid arguments")
+            return
+        self.game.player.move("right")
+        x, y = self.game.player.get_position()
+        print(f"Moved to ({x}, {y})")
+        if (x, y) in self.game.field:
+            self.game.field[(x, y)].encounter()
+
+    def do_addmon(self, arg):
+        parts = shlex.split(arg)
+        if len(parts) < 6:
+            print("Invalid arguments")
+            return
+        try:
+            name = parts[0]
+            if name not in self.game.valid_monsters:
+                print("Cannot add unknown monster")
                 return
-            self.player.move(cmd)
-            x, y = self.player.get_position()
-            print(f"Moved to ({x}, {y})")
-            if (x, y) in self.field:
-                self.field[(x, y)].encounter()
-        elif cmd == "addmon":
-            if len(parts) < 7:
-                print("Invalid arguments")
+            hello = None
+            hitpoints = None
+            x = None
+            y = None
+            i = 1
+            while i < len(parts):
+                if parts[i] == "hello" and i + 1 < len(parts):
+                    hello = parts[i + 1]
+                    i += 2
+                elif parts[i] == "hp" and i + 1 < len(parts):
+                    hitpoints = int(parts[i + 1])
+                    i += 2
+                elif parts[i] == "coords" and i + 2 < len(parts):
+                    x = int(parts[i + 1])
+                    y = int(parts[i + 2])
+                    i += 3
+                else:
+                    print("Invalid arguments")
+                    return
+            if hello is None or hitpoints is None or x is None or y is None:
+                print("Missing required arguments")
                 return
-            try:
-                name = parts[1]
-                if name not in self.valid_monsters:
-                    print("Cannot add unknown monster")
-                    return
-                hello = None
-                hitpoints = None
-                x = None
-                y = None
-                i = 2
-                while i < len(parts):
-                    if parts[i] == "hello" and i + 1 < len(parts):
-                        hello = parts[i + 1]
-                        i += 2
-                    elif parts[i] == "hp" and i + 1 < len(parts):
-                        hitpoints = int(parts[i + 1])
-                        i += 2
-                    elif parts[i] == "coords" and i + 2 < len(parts):
-                        x = int(parts[i + 1])
-                        y = int(parts[i + 2])
-                        i += 3
-                    else:
-                        print("Invalid arguments")
-                        return
-                if hello is None or hitpoints is None or x is None or y is None:
-                    print("Missing required arguments")
-                    return
-                if hitpoints <= 0:
-                    print("Hitpoints must be positive")
-                    return
-                replaced = self.add_monster(x, y, name, hello, hitpoints)
-                print(f"Added monster {name} to ({x}, {y}) saying {hello}")
-                if replaced:
-                    print("Replaced the old monster")
-            except ValueError:
-                print("Invalid arguments")
-        else:
-            print("Invalid command")
+            if hitpoints <= 0:
+                print("Hitpoints must be positive")
+                return
+            replaced = self.game.add_monster(x, y, name, hello, hitpoints)
+            print(f"Added monster {name} to ({x}, {y}) saying {hello}")
+            if replaced:
+                print("Replaced the old monster")
+        except ValueError:
+            print("Invalid arguments")
 
+    def do_quit(self, arg):
+        print("Goodbye!")
+        return True
 
-def main():
-    print("<<< Welcome to Python-MUD 0.1 >>>")
-    game = Game()
-    for line in sys.stdin:
-        game.process_command(line)
+    def do_EOF(self, arg):
+        print("Goodbye!")
+        return True
 
 
 if __name__ == "__main__":
-    main()
+    MudCmd().cmdloop()
