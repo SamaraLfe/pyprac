@@ -72,12 +72,13 @@ class Game:
         self.field[key] = Monster(x, y, name, hello, hitpoints)
         return replaced
 
-    def attack_monster(self, damage):
+    def attack_monster(self, monster_name):
         pos = self.player.get_position()
-        if pos not in self.field:
-            print("No monster here")
+        if pos not in self.field or self.field[pos].name != monster_name:
+            print(f"No {monster_name} here")
             return
         monster = self.field[pos]
+        damage = 10
         actual_damage = min(damage, monster.hitpoints)
         monster.hitpoints -= actual_damage
         print(f"Attacked {monster.name}, damage {actual_damage} hp")
@@ -187,10 +188,17 @@ class MudCmd(cmd.Cmd):
         return [kw for kw in keywords if kw not in used and kw.startswith(text)]
 
     def do_attack(self, arg):
-        if arg:
+        parts = shlex.split(arg)
+        if len(parts) != 1:
             print("Invalid arguments")
             return
-        self.game.attack_monster(10)
+        self.game.attack_monster(parts[0])
+
+    def complete_attack(self, text, line, begidx, endidx):
+        args = shlex.split(line[:begidx])
+        if len(args) <= 1:
+            return [name for name in self.game.valid_monsters if name.startswith(text)]
+        return []
 
     def do_quit(self, arg):
         print("Goodbye!")
