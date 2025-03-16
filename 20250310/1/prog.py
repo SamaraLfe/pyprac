@@ -61,6 +61,7 @@ class Game:
         self.field = {}
         self.player = Gamer(0, 0)
         self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
+        self.weapons = {"sword": 10, "spear": 15, "axe": 20}
 
     def add_monster(self, x, y, name, hello, hitpoints):
         if not (0 <= x <= 9 and 0 <= y <= 9):
@@ -187,10 +188,25 @@ class MudCmd(cmd.Cmd):
         return [kw for kw in keywords if kw not in used and kw.startswith(text)]
 
     def do_attack(self, arg):
-        if arg:
-            print("Invalid arguments")
-            return
-        self.game.attack_monster(10)
+        parts = shlex.split(arg)
+        weapon = "sword"  # Default weapon
+        if parts:
+            if len(parts) != 2 or parts[0] != "with":
+                print("Invalid arguments")
+                return
+            weapon = parts[1]
+            if weapon not in self.game.weapons:
+                print("Unknown weapon")
+                return
+        self.game.attack_monster(self.game.weapons[weapon])
+
+    def complete_attack(self, text, line, begidx, endidx):
+        args = shlex.split(line[:begidx])
+        if len(args) == 2 and args[1] == "with":
+            return [w for w in self.game.weapons if w.startswith(text)]
+        elif len(args) == 1:
+            return ["with"] if "with".startswith(text) else []
+        return []
 
     def do_quit(self, arg):
         print("Goodbye!")
