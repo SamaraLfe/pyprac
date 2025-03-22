@@ -17,6 +17,7 @@ $the_cow = <<EOC;
 EOC
 """))
 
+cow_files = {"jgsbat": jgsbat}
 
 class Person:
     def __init__(self, x, y):
@@ -35,10 +36,7 @@ class Monster(Person):
         self.hitpoints = hitpoints
 
     def encounter(self):
-        if self.name == "jgsbat":
-            print(cowsay.cowsay(self.hello, cowfile=jgsbat))
-        else:
-            print(cowsay.cowsay(self.hello, cow=self.name))
+        print(cowsay.cowsay(self.hello, cowfile=cow_files.get(self.name, self.name)))
 
 
 class Gamer(Person):
@@ -64,10 +62,6 @@ class Game:
         self.weapons = {"sword": 10, "spear": 15, "axe": 20}
 
     def add_monster(self, x, y, name, hello, hitpoints):
-        if not (0 <= x <= 9 and 0 <= y <= 9):
-            return False
-        if hitpoints <= 0:
-            return False
         key = (x, y)
         replaced = key in self.field
         self.field[key] = Monster(x, y, name, hello, hitpoints)
@@ -97,45 +91,27 @@ class MudCmd(cmd.Cmd):
         super().__init__()
         self.game = Game()
 
-    def do_up(self, arg):
+    def _move(self, direction, arg):
         if arg:
             print("Invalid arguments")
             return
-        self.game.player.move("up")
+        self.game.player.move(direction)
         x, y = self.game.player.get_position()
         print(f"Moved to ({x}, {y})")
         if (x, y) in self.game.field:
             self.game.field[(x, y)].encounter()
+
+    def do_up(self, arg):
+        self._move("up", arg)
 
     def do_down(self, arg):
-        if arg:
-            print("Invalid arguments")
-            return
-        self.game.player.move("down")
-        x, y = self.game.player.get_position()
-        print(f"Moved to ({x}, {y})")
-        if (x, y) in self.game.field:
-            self.game.field[(x, y)].encounter()
+        self._move("down", arg)
 
     def do_left(self, arg):
-        if arg:
-            print("Invalid arguments")
-            return
-        self.game.player.move("left")
-        x, y = self.game.player.get_position()
-        print(f"Moved to ({x}, {y})")
-        if (x, y) in self.game.field:
-            self.game.field[(x, y)].encounter()
+        self._move("left", arg)
 
     def do_right(self, arg):
-        if arg:
-            print("Invalid arguments")
-            return
-        self.game.player.move("right")
-        x, y = self.game.player.get_position()
-        print(f"Moved to ({x}, {y})")
-        if (x, y) in self.game.field:
-            self.game.field[(x, y)].encounter()
+        self._move("right", arg)
 
     def do_addmon(self, arg):
         parts = shlex.split(arg)
@@ -147,33 +123,33 @@ class MudCmd(cmd.Cmd):
             if name not in self.game.valid_monsters:
                 print("Cannot add unknown monster")
                 return
-            hello = None
-            hitpoints = None
-            x = None
-            y = None
+
+            params = {}
             i = 1
             while i < len(parts):
-                if parts[i] == "hello" and i + 1 < len(parts):
-                    hello = parts[i + 1]
-                    i += 2
-                elif parts[i] == "hp" and i + 1 < len(parts):
-                    hitpoints = int(parts[i + 1])
-                    i += 2
-                elif parts[i] == "coords" and i + 2 < len(parts):
-                    x = int(parts[i + 1])
-                    y = int(parts[i + 2])
-                    i += 3
+                if parts[i] in ("hello", "hp", "coords") and i + 1 < len(parts):
+                    if parts[i] == "coords" and i + 2 < len(parts):
+                        params["x"], params["y"] = int(parts[i + 1]), int(parts[i + 2])
+                        i += 3
+                    else:
+                        params[parts[i]] = parts[i + 1] if parts[i] == "hello" else int(parts[i + 1])
+                        i += 2
                 else:
                     print("Invalid arguments")
                     return
-            if hello is None or hitpoints is None or x is None or y is None:
+
+            if not all(k in params for k in ("hello", "hp", "x", "y")):
                 print("Missing required arguments")
                 return
-            if hitpoints <= 0:
+            if params["hp"] <= 0:
                 print("Hitpoints must be positive")
                 return
-            replaced = self.game.add_monster(x, y, name, hello, hitpoints)
-            print(f"Added monster {name} to ({x}, {y}) saying {hello}")
+            if not (0 <= params["x"] <= 9 and 0 <= params["y"] <= 9):
+                print("Coordinates out of bounds")
+                return
+
+            replaced = self.game.add_monster(params["x"], params["y"], name, params["hello"], params["hp"])
+            print(f"Added monster {name} to ({params['x']}, {params['y']}) saying {params['hello']}")
             if replaced:
                 print("Replaced the old monster")
         except ValueError:
@@ -205,9 +181,9 @@ class MudCmd(cmd.Cmd):
         args = shlex.split(line[:begidx])
         if len(args) <= 1:
             return [name for name in self.game.valid_monsters if name.startswith(text)]
-        elif len(args) == 2:
+        if len(args) == 2:
             return ["with"] if "with".startswith(text) else []
-        elif len(args) == 3 and args[2] == "with":
+        if len(args) == 3 and args[2] == "with":
             return [w for w in self.game.weapons if w.startswith(text)]
         return []
 
