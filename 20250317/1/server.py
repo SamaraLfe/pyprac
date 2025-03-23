@@ -1,44 +1,7 @@
 import socket
 import json
 import cowsay
-from io import StringIO
-
-jgsbat = cowsay.read_dot_cow(StringIO("""
-$the_cow = <<EOC;
-    ,_                    _,
-    ) '-._  ,_    _,  _.-' (
-    )  _.-'.|\\--//|.'-._  (
-     )'   .'\\/o\\/o\\/'.   `(
-      ) .' . \\====/ . '. (
-       )  / <<    >> \\  (
-        '-._/``  ``\\_.-'
-  jgs     __\\'--'//__
-         (((""`  `"")))
-EOC
-"""))
-
-class Person:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def get_position(self):
-        return (self.x, self.y)
-
-class Monster(Person):
-    def __init__(self, x, y, name, hello, hitpoints):
-        super().__init__(x, y)
-        self.name = name
-        self.hello = hello
-        self.hitpoints = hitpoints
-
-class Gamer(Person):
-    def __init__(self, x, y):
-        super().__init__(x, y)
-
-    def move(self, dx, dy):
-        self.x = (self.x + dx) % 10
-        self.y = (self.y + dy) % 10
+from common import Monster, Gamer, communicate
 
 class Game:
     def __init__(self):
@@ -64,59 +27,44 @@ class Game:
             del self.field[pos]
         return True, actual_damage, remaining_hp
 
+def handle_move(game, command):
+    dx, dy = command["dx"], command["dy"]
+    game.player.move(dx, dy)
+    x, y = game.player.get_position()
+    response = {"type": "position", "x": x, "y": y}
+    if (x, y) in game.field:
+        monster = game.field[(x, y)]
+        response = {"type": "encounter", "name": monster.name, "hello": monster.hello}
+    return response
+
+def handle_addmon(game, command):
+    x, y, name, hello, hp = command["x"], command["y"], command["name"], command["hello"], command["hp"]
+    replaced = game.add_monster(x, y, name, hello, hp)
+    return {"type": "added_monster", "x": x, "y": y, "name": name, "replaced": replaced}
+
+def handle_attack(game, command):
+    name, damage = command["name"], command["damage"]
+    success, damage_dealt, remaining_hp = game.attack_monster(name, damage)
+    return {"type": "attack_result", "success": success, "damage": damage_dealt, "remaining_hp": remaining_hp}
+
+COMMAND_HANDLERS = {
+    "move": handle_move,
+    "addmon": handle_addmon,
+    "attack": handle_attack
+}
+
 def handle_client(conn, addr, game):
     print(f"Client connected: {addr}")
-    conn.settimeout(1.0)
     while True:
-        try:
-            data = b""
-            while True:
-                try:
-                    chunk = conn.recv(1024)
-                    if not chunk:
-                        print(f"Client disconnected: {addr}")
-                        return
-                    data += chunk
-                    try:
-                        command = json.loads(data.decode())
-                        break
-                    except json.JSONDecodeError:
-                        continue
-                except socket.timeout:
-                    continue
-                except ConnectionError:
-                    print(f"Client disconnected: {addr}")
-                    return
-            cmd_type = command["type"]
-            response = {}
-
-            if cmd_type == "move":
-                dx, dy = command["dx"], command["dy"]
-                game.player.move(dx, dy)
-                x, y = game.player.get_position()
-                response = {"type": "position", "x": x, "y": y}
-                if (x, y) in game.field:
-                    monster = game.field[(x, y)]
-                    response = {"type": "encounter", "name": monster.name, "hello": monster.hello}
-
-            elif cmd_type == "addmon":
-                x, y, name, hello, hp = command["x"], command["y"], command["name"], command["hello"], command["hp"]
-                replaced = game.add_monster(x, y, name, hello, hp)
-                response = {"type": "added_monster", "x": x, "y": y, "name": name, "replaced": replaced}
-
-            elif cmd_type == "attack":
-                name, damage = command["name"], command["damage"]
-                success, damage_dealt, remaining_hp = game.attack_monster(name, damage)
-                response = {"type": "attack_result", "success": success, "damage": damage_dealt, "remaining_hp": remaining_hp}
-
-            else:
-                response = {"type": "error", "message": "Unknown command"}
-
-            conn.send(json.dumps(response).encode() + b"\n")
-        except Exception as e:
+        command = communicate(conn)
+        if command["type"] == "error":
             print(f"Client disconnected: {addr}")
             break
+        handler = COMMAND_HANDLERS.get(command["type"], lambda g, c: {"type": "error", "message": "Unknown command"})
+        response = handler(game, command)
+        conn.send(json.dumps(response).encode() + b"\n")
     conn.close()
+    print(f"Client disconnected: {addr}")
 
 def main():
     game = Game()
@@ -127,12 +75,10 @@ def main():
         server.listen(1)
         print("Server started on localhost:12345")
         while True:
-            try:
-                conn, addr = server.accept()
-                handle_client(conn, addr, game)
-            except KeyboardInterrupt:
-                print("Shutting down server")
-                break
+            conn, addr = server.accept()
+            handle_client(conn, addr, game)
+    except KeyboardInterrupt:
+        print("Shutting down server")
     finally:
         server.close()
 

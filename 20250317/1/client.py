@@ -1,25 +1,8 @@
 import socket
-import json
 import cmd
 import shlex
 import cowsay
-from io import StringIO
-
-jgsbat = cowsay.read_dot_cow(StringIO("""
-$the_cow = <<EOC;
-    ,_                    _,
-    ) '-._  ,_    _,  _.-' (
-    )  _.-'.|\\--//|.'-._  (
-     )'   .'\\/o\\/o\\/'.   `(
-      ) .' . \\====/ . '. (
-       )  / <<    >> \\  (
-        '-._/``  ``\\_.-'
-  jgs     __\\'--'//__
-         (((""`  `"")))
-EOC
-"""))
-
-cow_files = {"jgsbat": jgsbat}
+from common import cow_files, communicate
 
 class MudCmd(cmd.Cmd):
     prompt = "(MUD) "
@@ -34,91 +17,73 @@ class MudCmd(cmd.Cmd):
     def connect(self):
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.settimeout(1.0)
             self.sock.connect(('localhost', 12345))
-        except Exception as e:
+        except Exception:
             self.sock = None
+            print("Error: Cannot connect to server")
 
-    def send_command(self, command):
-        if self.sock is None:
+    def do_move(self, direction):
+        if not self.sock:
             self.connect()
-            if self.sock is None:
-                return {"type": "error", "message": "Cannot connect to server"}
-        try:
-            self.sock.send(json.dumps(command).encode() + b"\n")
-            data = b""
-            while True:
-                try:
-                    chunk = self.sock.recv(1024)
-                    if not chunk:
-                        self.sock.close()
-                        self.sock = None
-                        return {"type": "error", "message": "Server disconnected"}
-                    data += chunk
-                    try:
-                        response = json.loads(data.decode())
-                        return response
-                    except json.JSONDecodeError:
-                        continue
-                except socket.timeout:
-                    self.sock.close()
-                    self.sock = None
-                    return {"type": "error", "message": "No response from server"}
-                except ConnectionError:
-                    self.sock.close()
-                    self.sock = None
-                    return {"type": "error", "message": "Connection error"}
-        except Exception as e:
+            if not self.sock:
+                print("Error: Cannot connect to server")
+                return
+        moves = {"up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)}
+        if direction not in moves:
+            print("Invalid direction")
+            return
+        dx, dy = moves[direction]
+        response = communicate(self.sock, {"type": "move", "dx": dx, "dy": dy})
+        if response is None or not isinstance(response, dict) or "type" not in response:
+            print("Error: Invalid server response")
             self.sock.close()
             self.sock = None
-            return {"type": "error", "message": str(e)}
-
-    def _move(self, direction, arg):
-        if arg:
-            print("Invalid arguments")
             return
-        dx, dy = {"up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)}[direction]
-        response = self.send_command({"type": "move", "dx": dx, "dy": dy})
         if response["type"] == "position":
             print(f"Moved to ({response['x']}, {response['y']})")
         elif response["type"] == "encounter":
-            cowfile = cow_files.get(response["name"], response["name"])
-            print(cowsay.cowsay(response["hello"], cow=cowfile))
+            print(cowsay.cowsay(response["hello"], cow=cow_files.get(response["name"], response["name"])))
         elif response["type"] == "error":
             print(f"Error: {response['message']}")
+            if "Connection" in response["message"]:
+                self.sock.close()
+                self.sock = None
 
     def do_up(self, arg):
-        self._move("up", arg)
+        self.do_move("up")
 
     def do_down(self, arg):
-        self._move("down", arg)
+        self.do_move("down")
 
     def do_left(self, arg):
-        self._move("left", arg)
+        self.do_move("left")
 
     def do_right(self, arg):
-        self._move("right", arg)
+        self.do_move("right")
 
     def do_addmon(self, arg):
+        if not self.sock:
+            self.connect()
+            if not self.sock:
+                print("Error: Cannot connect to server")
+                return
         parts = shlex.split(arg)
         if len(parts) < 6:
             print("Invalid arguments")
             return
         try:
-            name = parts[0]
+            name, params = parts[0], {}
             if name not in self.valid_monsters:
                 print("Cannot add unknown monster")
                 return
-            params = {}
             i = 1
             while i < len(parts):
-                if parts[i] in ("hello", "hp", "coords") and i + 1 < len(parts):
-                    if parts[i] == "coords" and i + 2 < len(parts):
-                        params["x"], params["y"] = int(parts[i + 1]), int(parts[i + 2])
-                        i += 3
-                    else:
-                        params[parts[i]] = parts[i + 1] if parts[i] == "hello" else int(parts[i + 1])
-                        i += 2
+                if parts[i] == "coords" and i + 2 < len(parts):
+                    params["x"], params["y"] = int(parts[i + 1]), int(parts[i + 2])
+                    i += 3
+                elif parts[i] in ("hello", "hp") and i + 1 < len(parts):
+                    params[parts[i]] = parts[i + 1] if parts[i] == "hello" else int(parts[i + 1])
+                    i += 2
                 else:
                     print("Invalid arguments")
                     return
@@ -131,20 +96,24 @@ class MudCmd(cmd.Cmd):
             if not (0 <= params["x"] <= 9 and 0 <= params["y"] <= 9):
                 print("Coordinates out of bounds")
                 return
-            response = self.send_command({
-                "type": "addmon",
-                "x": params["x"],
-                "y": params["y"],
-                "name": name,
-                "hello": params["hello"],
-                "hp": params["hp"]
+            response = communicate(self.sock, {
+                "type": "addmon", "x": params["x"], "y": params["y"],
+                "name": name, "hello": params["hello"], "hp": params["hp"]
             })
+            if response is None or not isinstance(response, dict) or "type" not in response:
+                print("Error: Invalid server response")
+                self.sock.close()
+                self.sock = None
+                return
             if response["type"] == "added_monster":
                 print(f"Added monster {name} to ({params['x']}, {params['y']}) saying {params['hello']}")
                 if response.get("replaced", False):
                     print("Replaced the old monster")
             elif response["type"] == "error":
                 print(f"Error: {response['message']}")
+                if "Connection" in response["message"]:
+                    self.sock.close()
+                    self.sock = None
         except ValueError:
             print("Invalid arguments")
 
@@ -157,6 +126,11 @@ class MudCmd(cmd.Cmd):
         return [kw for kw in keywords if kw not in used and kw.startswith(text)]
 
     def do_attack(self, arg):
+        if not self.sock:
+            self.connect()
+            if not self.sock:
+                print("Error: Cannot connect to server")
+                return
         parts = shlex.split(arg)
         if len(parts) < 1 or len(parts) > 3 or (len(parts) == 3 and parts[1] != "with"):
             print("Invalid arguments")
@@ -166,7 +140,12 @@ class MudCmd(cmd.Cmd):
         if weapon not in self.weapons:
             print("Unknown weapon")
             return
-        response = self.send_command({"type": "attack", "name": monster_name, "damage": self.weapons[weapon]})
+        response = communicate(self.sock, {"type": "attack", "name": monster_name, "damage": self.weapons[weapon]})
+        if response is None or not isinstance(response, dict) or "type" not in response:
+            print("Error: Invalid server response")
+            self.sock.close()
+            self.sock = None
+            return
         if response["type"] == "attack_result":
             if not response["success"]:
                 print(f"No {monster_name} here")
@@ -178,6 +157,9 @@ class MudCmd(cmd.Cmd):
                     print(f"{monster_name} now has {response['remaining_hp']}")
         elif response["type"] == "error":
             print(f"Error: {response['message']}")
+            if "Connection" in response["message"]:
+                self.sock.close()
+                self.sock = None
 
     def complete_attack(self, text, line, begidx, endidx):
         args = shlex.split(line[:begidx])
