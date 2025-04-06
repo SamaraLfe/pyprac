@@ -17,7 +17,7 @@ EOC
 cow_files = {"jgsbat": jgsbat}
 
 class MudCmd(cmd.Cmd):
-    prompt = "(MUD) "
+    prompt = "(" + sys.argv[1] + ") "
 
     def __init__(self, username):
         super().__init__()
@@ -118,6 +118,9 @@ class MudCmd(cmd.Cmd):
             print(f"\nAdded monster at ({message['x']}, {message['y']})")
             if message.get("replaced", False):
                 print("Replaced the old monster")
+        elif t == "sayall_result":
+            if message.get("success"):
+                print(f"\nmessage \"{message.get('message')}\" sent")
         elif t == "error":
             print(f"\nError: {message.get('message', 'Unknown error')}")
 
@@ -203,6 +206,14 @@ class MudCmd(cmd.Cmd):
         if len(args)==3 and args[2]=="with":
             return [w for w in self.weapons if w.startswith(text)]
         return []
+
+    def do_sayall(self, arg):
+        parts = shlex.split(arg)
+        if len(parts) != 1:
+            print("Invalid arguments: provide a single word or a quoted string")
+            return
+        message = parts[0]
+        self.send_command({"type": "sayall", "message": message})
 
     def do_quit(self, arg):
         print("Goodbye!")

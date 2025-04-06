@@ -76,7 +76,12 @@ def handle_attack(game, user, cmd):
         game.send_to_all({"type": "broadcast", "message": msg})
     return {"type": "attack_result", "success": ok, "damage": dealt, "remaining_hp": hp, "killed": dead}
 
-COMMANDS = {"move": handle_move, "addmon": handle_addmon, "attack": handle_attack}
+def handle_sayall(game, user, cmd):
+    message = cmd["message"]
+    game.send_to_all({"type": "broadcast", "message": f"{user}: {message}"})
+    return {"type": "sayall_result", "success": True, "message": message}
+
+COMMANDS = {"move": handle_move, "addmon": handle_addmon, "attack": handle_attack, "sayall": handle_sayall}
 
 def handle_client(conn, addr, game, user):
     conn.send(json.dumps({"type": "welcome", "message": f"Welcome, {user}!"}).encode() + b"\n")
