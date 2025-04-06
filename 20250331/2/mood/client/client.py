@@ -1,25 +1,39 @@
-import socket, cmd, shlex, cowsay, json, sys, threading, readline
-from io import StringIO
+"""Client implementation for the MOOD game."""
+import socket
+import cmd
+import shlex
+import cowsay
+import json
+import sys
+import threading
+import readline
 
-jgsbat = cowsay.read_dot_cow(StringIO("""
-$the_cow = <<EOC;
-    ,_                    _,
-    ) '-._  ,_    _,  _.-' (
-    )  _.-'.|\\--//|.'-._  (
-     )'   .'\\/o\\/o\\/'.   `(
-      ) .' . \\====/ . '. (
-       )  / <<    >> \\  (
-        '-._/``  ``\\_.-'
-  jgs     __\\'--'//__
-         (((""`  `"")))
-EOC
-"""))
-cow_files = {"jgsbat": jgsbat}
+from ..common.models import cow_files
+
 
 class MudCmd(cmd.Cmd):
-    prompt = "(" + sys.argv[1] + ") "
+    """Command-line interface for the MOOD game client.
+
+    Attributes:
+        prompt (str): The command prompt displayed to the user.
+        username (str): The player's username.
+        valid_monsters (list): List of valid monster names from cowsay and jgsbat.
+        weapons (dict): Mapping of weapon names to their damage values.
+        sock (socket.socket): Socket for server communication.
+        connected (bool): Indicates if the client is connected to the server.
+        receiver_thread (threading.Thread): Thread for receiving server messages.
+    """
+    try:
+        prompt = "(" + sys.argv[1] + ") "
+    except Exception:
+        prompt = "(MUD) "
 
     def __init__(self, username):
+        """Initialize the MOOD client.
+
+        Args:
+            username (str): The player's username.
+        """
         super().__init__()
         self.username = username
         self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
@@ -32,6 +46,11 @@ class MudCmd(cmd.Cmd):
             sys.exit(1)
 
     def connect(self):
+        """Connect to the MOOD server.
+
+        Returns:
+            bool: True if connection is successful, False otherwise.
+        """
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect(('localhost', 12345))
@@ -57,15 +76,19 @@ class MudCmd(cmd.Cmd):
 
             print(response.get("message", "Connected to server"))
             self.connected = True
-            self.receiver_thread = threading.Thread(target=self.receive_messages, daemon=True)
+            self.receiver_thread = threading.Thread(
+                target=self.receive_messages, daemon=True
+            )
             self.receiver_thread.start()
             return True
         except Exception as e:
             print(f"Connection error: {e}")
-            if self.sock: self.sock.close()
+            if self.sock:
+                self.sock.close()
             return False
 
     def receive_messages(self):
+        """Receive and process messages from the server."""
         while self.connected:
             try:
                 data = b""
@@ -79,16 +102,14 @@ class MudCmd(cmd.Cmd):
                     try:
                         message = json.loads(data.decode())
                         data = b""
-
                         current_line = readline.get_line_buffer()
-                        sys.stdout.write('\r' + ' ' * (len(self.prompt) + len(current_line)) + '\r')
+                        sys.stdout.write('\r' + ' ' * (
+                            len(self.prompt) + len(current_line)
+                        ) + '\r')
                         sys.stdout.flush()
-
                         self.display_message(message)
-
                         sys.stdout.write(self.prompt + current_line)
                         sys.stdout.flush()
-
                         readline.redisplay()
                         break
                     except json.JSONDecodeError:
@@ -98,22 +119,36 @@ class MudCmd(cmd.Cmd):
                 self.connected = False
 
     def display_message(self, message):
+        """Display server messages to the user.
+
+        Args:
+            message (dict): The message received from the server.
+        """
         t = message.get("type", "")
         if t == "broadcast":
             print(f"\n[BROADCAST] {message.get('message')}")
         elif t == "position":
             print(f"\nMoved to ({message['x']}, {message['y']})")
         elif t == "encounter":
-            print("\n" + cowsay.cowsay(message["hello"], cow=cow_files.get(message["name"], message["name"])))
+            print("\n" + cowsay.cowsay(
+                message["hello"],
+                cow=cow_files.get(message["name"], message["name"])
+            ))
         elif t == "attack_result":
             if not message["success"]:
                 print(f"\nNo {message.get('name', 'monster')} here")
             else:
-                print(f"\nAttacked {message.get('name', 'monster')}, damage {message['damage']} hp")
+                print(
+                    f"\nAttacked {message.get('name', 'monster')}, "
+                    f"damage {message['damage']} hp"
+                )
                 if message.get("killed", message.get("remaining_hp", 0) == 0):
                     print(f"{message.get('name', 'Monster')} died")
                 else:
-                    print(f"{message.get('name', 'Monster')} now has {message['remaining_hp']}")
+                    print(
+                        f"{message.get('name', 'Monster')} now has "
+                        f"{message['remaining_hp']}"
+                    )
         elif t == "added_monster":
             print(f"\nAdded monster at ({message['x']}, {message['y']})")
             if message.get("replaced", False):
@@ -125,6 +160,14 @@ class MudCmd(cmd.Cmd):
             print(f"\nError: {message.get('message', 'Unknown error')}")
 
     def send_command(self, cmd_obj):
+        """Send a command to the server.
+
+        Args:
+            cmd_obj (dict): The command to send.
+
+        Returns:
+            bool: True if the command was sent successfully, False otherwise.
+        """
         if not self.connected:
             print("Not connected to server")
             return False
@@ -137,6 +180,11 @@ class MudCmd(cmd.Cmd):
             return False
 
     def do_move(self, direction):
+        """Move the player in the specified direction.
+
+        Args:
+            direction (str): The direction to move ('up', 'down', 'left', 'right').
+        """
         moves = {"up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)}
         if direction not in moves:
             print("Invalid direction")
@@ -144,12 +192,29 @@ class MudCmd(cmd.Cmd):
         dx, dy = moves[direction]
         self.send_command({"type": "move", "dx": dx, "dy": dy})
 
-    def do_up(self, arg): self.do_move("up")
-    def do_down(self, arg): self.do_move("down")
-    def do_left(self, arg): self.do_move("left")
-    def do_right(self, arg): self.do_move("right")
+    def do_up(self, arg):
+        """Move the player up."""
+        self.do_move("up")
+
+    def do_down(self, arg):
+        """Move the player down."""
+        self.do_move("down")
+
+    def do_left(self, arg):
+        """Move the player left."""
+        self.do_move("left")
+
+    def do_right(self, arg):
+        """Move the player right."""
+        self.do_move("right")
 
     def do_addmon(self, arg):
+        """Add a monster to the game field.
+
+        Args:
+            arg (str): Command arguments in the format
+            '<name> coords <x> <y> hello <msg> hp <value>'.
+        """
         parts = shlex.split(arg)
         if len(parts) < 6:
             print("Invalid arguments")
@@ -161,53 +226,101 @@ class MudCmd(cmd.Cmd):
                 return
             i = 1
             while i < len(parts):
-                if parts[i] == "coords" and i+2 < len(parts):
-                    params["x"], params["y"] = int(parts[i+1]), int(parts[i+2])
+                if parts[i] == "coords" and i + 2 < len(parts):
+                    params["x"], params["y"] = int(parts[i + 1]), int(parts[i + 2])
                     i += 3
-                elif parts[i] in ("hello","hp") and i+1 < len(parts):
-                    params[parts[i]] = parts[i+1] if parts[i]=="hello" else int(parts[i+1])
+                elif parts[i] in ("hello", "hp") and i + 1 < len(parts):
+                    params[parts[i]] = (
+                        parts[i + 1] if parts[i] == "hello" else int(parts[i + 1])
+                    )
                     i += 2
                 else:
                     print("Invalid arguments")
                     return
-            if not all(k in params for k in ("hello","hp","x","y")) or params["hp"]<=0 or not (0<=params["x"]<=9 and 0<=params["y"]<=9):
+            if not all(k in params for k in ("hello", "hp", "x", "y")) or \
+               params["hp"] <= 0 or not \
+                    (0 <= params["x"] <= 9 and 0 <= params["y"] <= 9):
                 print("Invalid parameters")
                 return
-            self.send_command({"type":"addmon","x":params["x"],"y":params["y"],"name":name,"hello":params["hello"],"hp":params["hp"]})
+            self.send_command({
+                "type": "addmon",
+                "x": params["x"],
+                "y": params["y"],
+                "name": name,
+                "hello": params["hello"],
+                "hp": params["hp"]
+            })
         except ValueError:
             print("Invalid arguments")
 
     def complete_addmon(self, text, line, begidx, endidx):
+        """Provide tab completion for the addmon command.
+
+        Args:
+            text (str): The current text being typed.
+            line (str): The full command line.
+            begidx (int): The start index of the text being completed.
+            endidx (int): The end index of the text being completed.
+
+        Returns:
+            list: Possible completions for the current input.
+        """
         args = shlex.split(line[:begidx])
         if len(args) == 1:
             return [m for m in self.valid_monsters if m.startswith(text)]
-        keywords = ["hp","coords","hello"]
+        keywords = ["hp", "coords", "hello"]
         used = set(a for a in args[1:] if a in keywords)
         return [k for k in keywords if k not in used and k.startswith(text)]
 
     def do_attack(self, arg):
+        """Attack a monster with a specified weapon.
+
+        Args:
+            arg (str): Command arguments in the format '<monster> [with <weapon>]'.
+        """
         parts = shlex.split(arg)
-        if len(parts)<1 or len(parts)>3 or (len(parts)==3 and parts[1]!="with"):
+        if len(parts) < 1 or len(parts) > 3 or (len(parts) == 3 and parts[1] != "with"):
             print("Invalid arguments")
             return
         monster = parts[0]
-        weapon = "sword" if len(parts)==1 else parts[2]
+        weapon = "sword" if len(parts) == 1 else parts[2]
         if weapon not in self.weapons:
             print("Unknown weapon")
             return
-        self.send_command({"type":"attack","name":monster,"weapon":weapon,"damage":self.weapons[weapon]})
+        self.send_command({
+            "type": "attack",
+            "name": monster,
+            "weapon": weapon,
+            "damage": self.weapons[weapon]
+        })
 
     def complete_attack(self, text, line, begidx, endidx):
+        """Provide tab completion for the attack command.
+
+        Args:
+            text (str): The current text being typed.
+            line (str): The full command line.
+            begidx (int): The start index of the text being completed.
+            endidx (int): The end index of the text being completed.
+
+        Returns:
+            list: Possible completions for the current input.
+        """
         args = shlex.split(line[:begidx])
-        if len(args)<=1:
+        if len(args) <= 1:
             return [m for m in self.valid_monsters if m.startswith(text)]
-        if len(args)==2:
+        if len(args) == 2:
             return ["with"] if "with".startswith(text) else []
-        if len(args)==3 and args[2]=="with":
+        if len(args) == 3 and args[2] == "with":
             return [w for w in self.weapons if w.startswith(text)]
         return []
 
     def do_sayall(self, arg):
+        """Send a message to all players.
+
+        Args:
+            arg (str): The message, either a single word or a quoted string.
+        """
         parts = shlex.split(arg)
         if len(parts) != 1:
             print("Invalid arguments: provide a single word or a quoted string")
@@ -216,24 +329,21 @@ class MudCmd(cmd.Cmd):
         self.send_command({"type": "sayall", "message": message})
 
     def do_quit(self, arg):
+        """Quit the game."""
         print("Goodbye!")
         self.connected = False
-        if self.sock: self.sock.close()
+        if self.sock:
+            self.sock.close()
         return True
 
     def do_EOF(self, arg):
+        """Handle EOF (Ctrl+D) to quit the game."""
         print("Goodbye!")
         self.connected = False
-        if self.sock: self.sock.close()
+        if self.sock:
+            self.sock.close()
         return True
 
-    def emptyline(self): pass
-
-if __name__=="__main__":
-    if len(sys.argv)!=2:
-        print("Usage: python client.py <username>")
-        sys.exit(1)
-    if " " in sys.argv[1]:
-        print("Error: Username cannot contain spaces")
-        sys.exit(1)
-    MudCmd(sys.argv[1]).cmdloop()
+    def emptyline(self):
+        """Handle empty line input."""
+        pass

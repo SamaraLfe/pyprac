@@ -5,9 +5,10 @@ name = "pypi"
 
 [packages]
 python-cowsay = "*"
+flake8 = "*"
+pydocstyle = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.12"
-python_full_version = "3.12.3"
