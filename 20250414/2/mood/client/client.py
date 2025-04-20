@@ -1,4 +1,3 @@
-"""Client implementation for the MOOD game."""
 import socket
 import cmd
 import shlex
@@ -166,6 +165,8 @@ class MudCmd(cmd.Cmd):
             print(f"\nMonster {message['name']} moved one cell {message['direction']}")
         elif t == "movemonsters_result":
             print(f"\nMoving monsters: {message['state']}")
+        elif t == "locale_result":
+            print(f"\n{message.get('message')}")
         elif t == "error":
             print(f"\nError: {message.get('message', 'Unknown error')}")
 
@@ -182,7 +183,6 @@ class MudCmd(cmd.Cmd):
             print("Not connected to server")
             return False
 
-        # Enforce 1-second delay between commands
         current_time = time.time()
         if current_time - self.last_command_time < 1:
             time.sleep(1 - (current_time - self.last_command_time))
@@ -269,17 +269,7 @@ class MudCmd(cmd.Cmd):
             print("Invalid arguments")
 
     def complete_addmon(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the addmon command.
-
-        Args:
-            text: The current text being typed.
-            line: The full command line.
-            begidx: The start index of the text being completed.
-            endidx: The end index of the text being completed.
-
-        Returns:
-            list[str]: Possible completions for the current input.
-        """
+        """Provide tab completion for the addmon command."""
         args = shlex.split(line[:begidx])
         if len(args) == 1:
             return [m for m in self.valid_monsters if m.startswith(text)]
@@ -310,23 +300,13 @@ class MudCmd(cmd.Cmd):
         })
 
     def complete_attack(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the attack command.
-
-        Args:
-            text: The current text being typed.
-            line: The full command line.
-            begidx: The start index of the text being completed.
-            endidx: The end index of the text being completed.
-
-        Returns:
-            list[str]: Possible completions for the current input.
-        """
+        """Provide tab completion for the attack command."""
         args = shlex.split(line[:begidx])
         if len(args) <= 1:
             return [m for m in self.valid_monsters if m.startswith(text)]
         if len(args) == 2:
             return ["with"] if "with".startswith(text) else []
-        if len(args) == 3 and args[1] == "with":
+        if len(args) == 3 and args[2] == "with":
             return [w for w in self.weapons if w.startswith(text)]
         return []
 
@@ -355,17 +335,7 @@ class MudCmd(cmd.Cmd):
         self.send_command({"type": "timer"})
 
     def complete_timer(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the timer command.
-
-        Args:
-            text: The current text being typed.
-            line: The full command line.
-            begidx: The start index of the text being completed.
-            endidx: The end index of the text being completed.
-
-        Returns:
-            list[str]: Possible completions for the current input.
-        """
+        """Provide tab completion for the timer command."""
         return []
 
     def do_movemonsters(self, arg: str) -> None:
@@ -380,19 +350,27 @@ class MudCmd(cmd.Cmd):
         self.send_command({"type": "movemonsters", "state": arg})
 
     def complete_movemonsters(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the movemonsters command.
-
-        Args:
-            text: The current text being typed.
-            line: The full command line.
-            begidx: The start index of the text being completed.
-            endidx: The end index of the text being completed.
-
-        Returns:
-            list[str]: Possible completions for the current input.
-        """
+        """Provide tab completion for the movemonsters command."""
         options = ["on", "off"]
         return [opt for opt in options if opt.startswith(text)]
+
+    def do_locale(self, arg: str) -> None:
+        """Set the client locale.
+
+        Args:
+            arg: The locale name (e.g., ru_RU).
+        """
+        parts = shlex.split(arg)
+        if len(parts) != 1:
+            print("Invalid arguments: provide a single locale name")
+            return
+        locale_name = parts[0]
+        self.send_command({"type": "locale", "locale": locale_name})
+
+    def complete_locale(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+        """Provide tab completion for the locale command."""
+        locales = ["en_US", "ru_RU"]
+        return [loc for loc in locales if loc.startswith(text)]
 
     def do_quit(self, arg: str) -> bool:
         """Quit the game.

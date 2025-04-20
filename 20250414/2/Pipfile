@@ -8,6 +8,7 @@ python-cowsay = "*"
 flake8 = "*"
 pydocstyle = "*"
 sphinx = "*"
+babel = "*"
 
 [dev-packages]
 

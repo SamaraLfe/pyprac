@@ -1,11 +1,3 @@
-"""Server implementation for the MOOD game.
-
-This module manages the game state, handles client connections, and processes player
-commands for the MOOD (Multiplayer Online Dungeon) game. It supports a 10x10 game field
-with wrapped boundaries, allowing players to move, add monsters, attack, and broadcast
-messages. Additionally, it implements wandering monsters that move every 30 seconds to a
-random adjacent cell, triggering encounters if they land on a cell with players.
-"""
 import socket
 import json
 import random
@@ -13,6 +5,8 @@ import asyncio
 import threading
 import time
 import cowsay
+import gettext
+import os
 from typing import Dict, Tuple, Optional
 
 from ..common.models import Monster, Gamer
@@ -24,37 +18,48 @@ class Game:
     Attributes:
         field (Dict[Tuple[int, int], Monster]):
             Maps (x, y) coordinates to Monster objects.
-        players (Dict[str, Tuple[socket.socket, Gamer]]):
-            Maps usernames to (connection, Gamer) tuples.
+        players (Dict[str, Tuple[socket.socket, Gamer, str]]):
+            Maps usernames to (connection, Gamer, locale) tuples.
         valid_monsters (list):
             List of valid monster names from python-cowsay and jgsbat.
         start_time (float):
             Time when the server started (Unix timestamp).
         moving_monsters (bool):
             Whether monsters can move randomly (default: True).
+        locales (Dict[str, gettext.GNUTranslations]):
+            Loaded translations for supported locales.
     """
 
     def __init__(self):
         """Initialize the game state."""
         self.field: Dict[Tuple[int, int], Monster] = {}
-        self.players: Dict[str, Tuple[socket.socket, Gamer]] = {}
+        self.players: Dict[str, Tuple[socket.socket, Gamer, str]] = {}
         self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
         self.start_time = time.time()
-        self.moving_monsters = True  
+        self.moving_monsters = True
+        self.locales: Dict[str, gettext.GNUTranslations] = {}
+        self.load_locales()
+
+    def load_locales(self):
+        """Load available translations."""
+        locale_dir = os.path.join(os.path.dirname(__file__), 'locale')
+        try:
+            ru_trans = gettext.translation('messages', locale_dir, languages=['ru_RU'])
+            self.locales['ru_RU'] = ru_trans
+            print(f"Loaded translations for ru_RU from {locale_dir}")
+        except FileNotFoundError as e:
+            print(f"Warning: Could not load translations from {locale_dir}: {e}")
+            pass
 
     def get_uptime(self) -> float:
-        """Calculate server uptime in seconds.
-
-        Returns:
-            float: Server uptime in seconds.
-        """
+        """Calculate server uptime in seconds."""
         return time.time() - self.start_time
 
     def add_player(self, username: str, conn: socket.socket) -> bool:
         """Add a player to the game."""
         if username in self.players:
             return False
-        self.players[username] = (conn, Gamer(0, 0))
+        self.players[username] = (conn, Gamer(0, 0), 'en_US')  # Default locale
         return True
 
     def remove_player(self, username: str) -> bool:
@@ -63,7 +68,13 @@ class Game:
 
     def get_player(self, username: str) -> Optional[Gamer]:
         """Get a player's Gamer object."""
-        return self.players.get(username, (None, None))[1]
+        return self.players.get(username, (None, None, None))[1]
+
+    def get_translation(self, username: str) -> gettext.GNUTranslations:
+        """Get translation for a user."""
+        _, _, locale = self.players.get(username, (None, None, 'en_US'))
+        print(f"Getting translation for user {username}, locale {locale}")
+        return self.locales.get(locale, gettext.NullTranslations())
 
     def add_monster(self, x: int, y: int, name: str, hello: str, hp: int) -> bool:
         """Add a monster to the game field."""
@@ -89,14 +100,54 @@ class Game:
         return True, d, m.hitpoints, killed
 
     def send_to_all(self, msg: Dict) -> None:
-        """Send a message to all players."""
-        data = json.dumps(msg).encode() + b"\n"
-        for conn, _ in self.players.values():
-            asyncio.run_coroutine_threadsafe(self._send_async(conn, data), loop)
+        """Send a message to all players with their respective locales."""
+        for username, (conn, _, _) in self.players.items():
+            data = json.dumps(msg).encode() + b"\n"
+            asyncio.run_coroutine_threadsafe(self._send_async(conn, data, username), loop)
 
-    async def _send_async(self, conn: socket.socket, data: bytes) -> None:
-        """Asynchronously send data to a connection."""
+    async def _send_async(self, conn: socket.socket, data: bytes, username: str) -> None:
+        """Asynchronously send localized data to a connection."""
         try:
+            msg = json.loads(data.decode())
+            t = self.get_translation(username)
+
+            if msg.get("type") == "broadcast":
+                original = msg["message"]
+                print(f"Translating broadcast for {username}: {original}")
+                if " added " in original and " at " in original:
+                    user, rest = original.split(" added ")
+                    mon, rest = rest.split(" at ")
+                    coords, hello = rest.split(" saying ")
+                    x, y = map(int, coords.strip('()').split(','))
+                    msg["message"] = t.gettext("%s added %s at (%d,%d) saying %s") % (user, mon, x, y, hello)
+                elif original.endswith("joined the game!"):
+                    user = original.split()[0]
+                    msg["message"] = t.gettext("%s joined the game!") % user
+                elif original.endswith("left the game!"):
+                    user = original.split()[0]
+                    msg["message"] = t.gettext("%s left the game!") % user
+                elif "attacked" in original:
+                    parts = original.split()
+                    user, mon, weapon, dealt = parts[0], parts[2], parts[4].rstrip(','), int(parts[6])
+                    if original.endswith("was killed!"):
+                        msg["message"] = t.ngettext(
+                            "%s attacked %s with %s, dealing %d damage. %s was killed!",
+                            "%s attacked %s with %s, dealing %d damage. %s has %d HP remaining.",
+                            0
+                        ) % (user, mon, weapon, dealt, mon)
+                    else:
+                        hp = int(parts[-3])
+                        msg["message"] = t.ngettext(
+                            "%s attacked %s with %s, dealing %d damage. %s was killed!",
+                            "%s attacked %s with %s, dealing %d damage. %s has %d HP remaining.",
+                            hp
+                        ) % (user, mon, weapon, dealt, mon, hp)
+                elif " moved to " in original:
+                    user, coords = original.split(" moved to ")
+                    x, y = map(int, coords.strip('()').split(','))
+                    msg["message"] = t.gettext("%s moved to (%d,%d)") % (user, x, y)
+
+            data = json.dumps(msg).encode() + b"\n"
             conn.send(data)
             print(f"Sent to {conn.getpeername()}: {data.decode()}")
         except Exception as e:
@@ -132,7 +183,7 @@ class Game:
                     "name": monster.name,
                     "direction": direction
                 })
-                for username, (gamer_conn, gamer) in list(self.players.items()):
+                for username, (gamer_conn, gamer, _) in list(self.players.items()):
                     if gamer.get_position() == new_pos:
                         if gamer_conn:
                             try:
@@ -162,6 +213,7 @@ def handle_move(game: Game, user: str, cmd: Dict) -> Dict:
     p.move(cmd["dx"], cmd["dy"])
     x, y = p.get_position()
     m = game.field.get((x, y))
+    game.send_to_all({"type": "broadcast", "message": f"{user} moved to ({x},{y})"})
     return (
         {"type": "encounter", "name": m.name, "hello": m.hello}
         if m else {"type": "position", "x": x, "y": y}
@@ -226,22 +278,36 @@ def handle_movemonsters(game: Game, user: str, cmd: Dict) -> Dict:
     return {"type": "movemonsters_result", "state": state}
 
 
+def handle_locale(game: Game, user: str, cmd: Dict) -> Dict:
+    """Handle the locale command."""
+    locale = cmd.get("locale")
+    if locale not in ["en_US", "ru_RU"]:
+        return {"type": "error", "message": f"Unsupported locale: {locale}"}
+    conn, gamer, _ = game.players[user]
+    game.players[user] = (conn, gamer, locale)
+    t = game.get_translation(user)
+    print(f"Set locale for {user} to {locale}")
+    return {"type": "locale_result", "message": t.gettext("Set up locale: %s") % locale}
+
+
 COMMANDS = {
     "move": handle_move,
     "addmon": handle_addmon,
     "attack": handle_attack,
     "sayall": handle_sayall,
     "timer": handle_timer,
-    "movemonsters": handle_movemonsters
+    "movemonsters": handle_movemonsters,
+    "locale": handle_locale
 }
 
 
 def handle_client(conn: socket.socket, addr: Tuple[str, int],
                   game: Game, user: str) -> None:
     """Handle a client connection."""
+    t = game.get_translation(user)
     conn.send(json.dumps({
         "type": "welcome",
-        "message": f"Welcome, {user}!"
+        "message": t.gettext("Welcome, %s!") % user
     }).encode() + b"\n")
     game.send_to_all({"type": "broadcast", "message": f"{user} joined the game!"})
     try:
@@ -345,7 +411,3 @@ def main() -> None:
     finally:
         sock.close()
         loop.call_soon_threadsafe(loop.stop)
-
-
-if __name__ == "__main__":
-    main()
