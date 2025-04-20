@@ -1,0 +1,7 @@
+msgid "Введите строку:"
+msgstr "Please enter text:"
+
+msgid "Найдено {} слово"
+msgid_plural "Найдено {} слова"
+msgstr[0] "Detected {} word"
+msgstr[1] "Detected {} words"
