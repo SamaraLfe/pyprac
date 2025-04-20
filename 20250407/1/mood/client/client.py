@@ -10,30 +10,15 @@ import readline
 
 from ..common.models import cow_files
 
-
 class MudCmd(cmd.Cmd):
-    """Command-line interface for the MOOD game client.
-
-    Attributes:
-        prompt (str): The command prompt displayed to the user.
-        username (str): The player's username.
-        valid_monsters (list): List of valid monster names from cowsay and jgsbat.
-        weapons (dict): Mapping of weapon names to their damage values.
-        sock (socket.socket): Socket for server communication.
-        connected (bool): Indicates if the client is connected to the server.
-        receiver_thread (threading.Thread): Thread for receiving server messages.
-    """
+    """Command-line interface for the MOOD game client."""
     try:
         prompt = "(" + sys.argv[1] + ") "
     except Exception:
         prompt = "(MUD) "
 
     def __init__(self, username):
-        """Initialize the MOOD client.
-
-        Args:
-            username (str): The player's username.
-        """
+        """Initialize the MOOD client."""
         super().__init__()
         self.username = username
         self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
@@ -46,11 +31,7 @@ class MudCmd(cmd.Cmd):
             sys.exit(1)
 
     def connect(self):
-        """Connect to the MOOD server.
-
-        Returns:
-            bool: True if connection is successful, False otherwise.
-        """
+        """Connect to the MOOD server."""
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect(('localhost', 12345))
@@ -119,11 +100,7 @@ class MudCmd(cmd.Cmd):
                 self.connected = False
 
     def display_message(self, message):
-        """Display server messages to the user.
-
-        Args:
-            message (dict): The message received from the server.
-        """
+        """Display server messages to the user."""
         t = message.get("type", "")
         if t == "broadcast":
             print(f"\n[BROADCAST] {message.get('message')}")
@@ -156,18 +133,15 @@ class MudCmd(cmd.Cmd):
         elif t == "sayall_result":
             if message.get("success"):
                 print(f"\nmessage \"{message.get('message')}\" sent")
+        elif t == "timer_result":
+            print(f"\nServer uptime: {message['uptime']} seconds")
+        elif t == "monster_move":
+            print(f"\nMonster {message['name']} moved one cell {message['direction']}")
         elif t == "error":
             print(f"\nError: {message.get('message', 'Unknown error')}")
 
     def send_command(self, cmd_obj):
-        """Send a command to the server.
-
-        Args:
-            cmd_obj (dict): The command to send.
-
-        Returns:
-            bool: True if the command was sent successfully, False otherwise.
-        """
+        """Send a command to the server."""
         if not self.connected:
             print("Not connected to server")
             return False
@@ -180,11 +154,7 @@ class MudCmd(cmd.Cmd):
             return False
 
     def do_move(self, direction):
-        """Move the player in the specified direction.
-
-        Args:
-            direction (str): The direction to move ('up', 'down', 'left', 'right').
-        """
+        """Move the player in the specified direction."""
         moves = {"up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)}
         if direction not in moves:
             print("Invalid direction")
@@ -209,12 +179,7 @@ class MudCmd(cmd.Cmd):
         self.do_move("right")
 
     def do_addmon(self, arg):
-        """Add a monster to the game field.
-
-        Args:
-            arg (str): Command arguments in the format
-            '<name> coords <x> <y> hello <msg> hp <value>'.
-        """
+        """Add a monster to the game field."""
         parts = shlex.split(arg)
         if len(parts) < 6:
             print("Invalid arguments")
@@ -254,17 +219,7 @@ class MudCmd(cmd.Cmd):
             print("Invalid arguments")
 
     def complete_addmon(self, text, line, begidx, endidx):
-        """Provide tab completion for the addmon command.
-
-        Args:
-            text (str): The current text being typed.
-            line (str): The full command line.
-            begidx (int): The start index of the text being completed.
-            endidx (int): The end index of the text being completed.
-
-        Returns:
-            list: Possible completions for the current input.
-        """
+        """Provide tab completion for the addmon command."""
         args = shlex.split(line[:begidx])
         if len(args) == 1:
             return [m for m in self.valid_monsters if m.startswith(text)]
@@ -273,11 +228,7 @@ class MudCmd(cmd.Cmd):
         return [k for k in keywords if k not in used and k.startswith(text)]
 
     def do_attack(self, arg):
-        """Attack a monster with a specified weapon.
-
-        Args:
-            arg (str): Command arguments in the format '<monster> [with <weapon>]'.
-        """
+        """Attack a monster with a specified weapon."""
         parts = shlex.split(arg)
         if len(parts) < 1 or len(parts) > 3 or (len(parts) == 3 and parts[1] != "with"):
             print("Invalid arguments")
@@ -295,17 +246,7 @@ class MudCmd(cmd.Cmd):
         })
 
     def complete_attack(self, text, line, begidx, endidx):
-        """Provide tab completion for the attack command.
-
-        Args:
-            text (str): The current text being typed.
-            line (str): The full command line.
-            begidx (int): The start index of the text being completed.
-            endidx (int): The end index of the text being completed.
-
-        Returns:
-            list: Possible completions for the current input.
-        """
+        """Provide tab completion for the attack command."""
         args = shlex.split(line[:begidx])
         if len(args) <= 1:
             return [m for m in self.valid_monsters if m.startswith(text)]
@@ -316,17 +257,24 @@ class MudCmd(cmd.Cmd):
         return []
 
     def do_sayall(self, arg):
-        """Send a message to all players.
-
-        Args:
-            arg (str): The message, either a single word or a quoted string.
-        """
+        """Send a message to all players."""
         parts = shlex.split(arg)
         if len(parts) != 1:
             print("Invalid arguments: provide a single word or a quoted string")
             return
         message = parts[0]
         self.send_command({"type": "sayall", "message": message})
+
+    def do_timer(self, arg):
+        """Request the server uptime."""
+        if arg:
+            print("Timer command takes no arguments")
+            return
+        self.send_command({"type": "timer"})
+
+    def complete_timer(self, text, line, begidx, endidx):
+        """Provide tab completion for the timer command."""
+        return []
 
     def do_quit(self, arg):
         """Quit the game."""
