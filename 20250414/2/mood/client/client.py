@@ -130,43 +130,15 @@ class MudCmd(cmd.Cmd):
         t = message.get("type", "")
         if t == "broadcast":
             print(f"\n[BROADCAST] {message.get('message')}")
-        elif t == "position":
-            print(f"\nMoved to ({message['x']}, {message['y']})")
+        elif t in ("position", "attack_result", "added_monster", "sayall_result",
+                   "timer_result", "monster_move", "movemonsters_result", "locale_result",
+                   "help_result"):
+            print(f"\n{message.get('message')}")
         elif t == "encounter":
             print("\n" + cowsay.cowsay(
                 message["hello"],
                 cow=cow_files.get(message["name"], message["name"])
             ))
-        elif t == "attack_result":
-            if not message["success"]:
-                print(f"\nNo {message.get('name', 'monster')} here")
-            else:
-                print(
-                    f"\nAttacked {message.get('name', 'monster')}, "
-                    f"damage {message['damage']} hp"
-                )
-                if message.get("killed", message.get("remaining_hp", 0) == 0):
-                    print(f"{message.get('name', 'Monster')} died")
-                else:
-                    print(
-                        f"{message.get('name', 'Monster')} now has "
-                        f"{message['remaining_hp']}"
-                    )
-        elif t == "added_monster":
-            print(f"\nAdded monster at ({message['x']}, {message['y']})")
-            if message.get("replaced", False):
-                print("Replaced the old monster")
-        elif t == "sayall_result":
-            if message.get("success"):
-                print(f"\nmessage \"{message.get('message')}\" sent")
-        elif t == "timer_result":
-            print(f"\nServer uptime: {message['uptime']} seconds")
-        elif t == "monster_move":
-            print(f"\nMonster {message['name']} moved one cell {message['direction']}")
-        elif t == "movemonsters_result":
-            print(f"\nMoving monsters: {message['state']}")
-        elif t == "locale_result":
-            print(f"\n{message.get('message')}")
         elif t == "error":
             print(f"\nError: {message.get('message', 'Unknown error')}")
 
@@ -197,11 +169,7 @@ class MudCmd(cmd.Cmd):
             return False
 
     def do_move(self, direction: str) -> None:
-        """Move the player in the specified direction.
-
-        Args:
-            direction: The direction to move ('up', 'down', 'left', 'right').
-        """
+        """Move the player in the specified direction."""
         moves = {"up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)}
         if direction not in moves:
             print("Invalid direction")
@@ -210,27 +178,23 @@ class MudCmd(cmd.Cmd):
         self.send_command({"type": "move", "dx": dx, "dy": dy})
 
     def do_up(self, arg: str) -> None:
-        """Move the player up."""
+        """Move up."""
         self.do_move("up")
 
     def do_down(self, arg: str) -> None:
-        """Move the player down."""
+        """Move down."""
         self.do_move("down")
 
     def do_left(self, arg: str) -> None:
-        """Move the player left."""
+        """Move left."""
         self.do_move("left")
 
     def do_right(self, arg: str) -> None:
-        """Move the player right."""
+        """Move right."""
         self.do_move("right")
 
     def do_addmon(self, arg: str) -> None:
-        """Add a monster to the game field.
-
-        Args:
-            arg: Command arguments in the format '<name> coords <x> <y> hello <msg> hp <value>'.
-        """
+        """Add a monster to the game field."""
         parts = shlex.split(arg)
         if len(parts) < 6:
             print("Invalid arguments")
@@ -269,7 +233,7 @@ class MudCmd(cmd.Cmd):
             print("Invalid arguments")
 
     def complete_addmon(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the addmon command."""
+        """Provide tab completion for addmon."""
         args = shlex.split(line[:begidx])
         if len(args) == 1:
             return [m for m in self.valid_monsters if m.startswith(text)]
@@ -278,11 +242,7 @@ class MudCmd(cmd.Cmd):
         return [k for k in keywords if k not in used and k.startswith(text)]
 
     def do_attack(self, arg: str) -> None:
-        """Attack a monster with a specified weapon.
-
-        Args:
-            arg: Command arguments in the format '<monster> [with <weapon>]'.
-        """
+        """Attack a monster with a specified weapon."""
         parts = shlex.split(arg)
         if len(parts) < 1 or len(parts) > 3 or (len(parts) == 3 and parts[1] != "with"):
             print("Invalid arguments")
@@ -300,22 +260,18 @@ class MudCmd(cmd.Cmd):
         })
 
     def complete_attack(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the attack command."""
+        """Provide tab completion for attack."""
         args = shlex.split(line[:begidx])
         if len(args) <= 1:
             return [m for m in self.valid_monsters if m.startswith(text)]
         if len(args) == 2:
             return ["with"] if "with".startswith(text) else []
-        if len(args) == 3 and args[2] == "with":
+        if len(args) == 3 and args[1] == "with":
             return [w for w in self.weapons if w.startswith(text)]
         return []
 
     def do_sayall(self, arg: str) -> None:
-        """Send a message to all players.
-
-        Args:
-            arg: The message, either a single word or a quoted string.
-        """
+        """Send a message to all players."""
         parts = shlex.split(arg)
         if len(parts) != 1:
             print("Invalid arguments: provide a single word or a quoted string")
@@ -324,42 +280,30 @@ class MudCmd(cmd.Cmd):
         self.send_command({"type": "sayall", "message": message})
 
     def do_timer(self, arg: str) -> None:
-        """Request the server uptime.
-
-        Args:
-            arg: Should be empty.
-        """
+        """Request server uptime."""
         if arg:
             print("Timer command takes no arguments")
             return
         self.send_command({"type": "timer"})
 
     def complete_timer(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the timer command."""
+        """Provide tab completion for timer."""
         return []
 
     def do_movemonsters(self, arg: str) -> None:
-        """Enable or disable moving monsters.
-
-        Args:
-            arg: Either 'on' or 'off'.
-        """
+        """Enable or disable moving monsters."""
         if arg not in ("on", "off"):
             print("Invalid argument: use 'on' or 'off'")
             return
         self.send_command({"type": "movemonsters", "state": arg})
 
     def complete_movemonsters(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the movemonsters command."""
+        """Provide tab completion for movemonsters."""
         options = ["on", "off"]
         return [opt for opt in options if opt.startswith(text)]
 
     def do_locale(self, arg: str) -> None:
-        """Set the client locale.
-
-        Args:
-            arg: The locale name (e.g., ru_RU).
-        """
+        """Set the client locale."""
         parts = shlex.split(arg)
         if len(parts) != 1:
             print("Invalid arguments: provide a single locale name")
@@ -368,19 +312,24 @@ class MudCmd(cmd.Cmd):
         self.send_command({"type": "locale", "locale": locale_name})
 
     def complete_locale(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
-        """Provide tab completion for the locale command."""
+        """Provide tab completion for locale."""
         locales = ["en_US", "ru_RU"]
         return [loc for loc in locales if loc.startswith(text)]
 
+    def do_help(self, arg: str) -> None:
+        """Request help from the server."""
+        self.send_command({"type": "help", "command": arg.strip()})
+
+    def complete_help(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+        """Provide tab completion for help."""
+        commands = [
+            "EOF", "attack", "help", "locale", "movemonsters", "right", "timer",
+            "addmon", "down", "left", "move", "quit", "sayall", "up"
+        ]
+        return [cmd for cmd in commands if cmd.startswith(text)]
+
     def do_quit(self, arg: str) -> bool:
-        """Quit the game.
-
-        Args:
-            arg: Ignored.
-
-        Returns:
-            bool: True to exit the command loop.
-        """
+        """Quit the game."""
         print("Goodbye!")
         self.connected = False
         if self.sock:
@@ -388,19 +337,8 @@ class MudCmd(cmd.Cmd):
         return True
 
     def do_EOF(self, arg: str) -> bool:
-        """Handle EOF (Ctrl+D or end of file) to quit the game.
-
-        Args:
-            arg: Ignored.
-
-        Returns:
-            bool: True to exit the command loop.
-        """
-        print("Goodbye!")
-        self.connected = False
-        if self.sock:
-            self.sock.close()
-        return True
+        """Handle EOF to quit the game."""
+        return self.do_quit(arg)
 
     def emptyline(self) -> None:
         """Handle empty line input."""

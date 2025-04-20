@@ -13,25 +13,8 @@ from ..common.models import Monster, Gamer
 
 
 class Game:
-    """Manages the game state for the MOOD server.
-
-    Attributes:
-        field (Dict[Tuple[int, int], Monster]):
-            Maps (x, y) coordinates to Monster objects.
-        players (Dict[str, Tuple[socket.socket, Gamer, str]]):
-            Maps usernames to (connection, Gamer, locale) tuples.
-        valid_monsters (list):
-            List of valid monster names from python-cowsay and jgsbat.
-        start_time (float):
-            Time when the server started (Unix timestamp).
-        moving_monsters (bool):
-            Whether monsters can move randomly (default: True).
-        locales (Dict[str, gettext.GNUTranslations]):
-            Loaded translations for supported locales.
-    """
-
+    """Manages the game state for the MOOD server."""
     def __init__(self):
-        """Initialize the game state."""
         self.field: Dict[Tuple[int, int], Monster] = {}
         self.players: Dict[str, Tuple[socket.socket, Gamer, str]] = {}
         self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
@@ -49,7 +32,6 @@ class Game:
             print(f"Loaded translations for ru_RU from {locale_dir}")
         except FileNotFoundError as e:
             print(f"Warning: Could not load translations from {locale_dir}: {e}")
-            pass
 
     def get_uptime(self) -> float:
         """Calculate server uptime in seconds."""
@@ -59,7 +41,7 @@ class Game:
         """Add a player to the game."""
         if username in self.players:
             return False
-        self.players[username] = (conn, Gamer(0, 0), 'en_US')  # Default locale
+        self.players[username] = (conn, Gamer(0, 0), 'en_US')
         return True
 
     def remove_player(self, username: str) -> bool:
@@ -92,12 +74,12 @@ class Game:
         m = self.field.get(pos)
         if not m or m.name != name:
             return False, 0, 0, False
-        d = min(dmg, m.hitpoints)
-        m.hitpoints -= d
-        killed = m.hitpoints == 0
+        d = min(dmg, m.hp)
+        m.hp -= d
+        killed = m.hp == 0
         if killed:
             del self.field[pos]
-        return True, d, m.hitpoints, killed
+        return True, d, m.hp, killed
 
     def send_to_all(self, msg: Dict) -> None:
         """Send a message to all players with their respective locales."""
@@ -110,7 +92,6 @@ class Game:
         try:
             msg = json.loads(data.decode())
             t = self.get_translation(username)
-
             if msg.get("type") == "broadcast":
                 original = msg["message"]
                 print(f"Translating broadcast for {username}: {original}")
@@ -146,7 +127,10 @@ class Game:
                     user, coords = original.split(" moved to ")
                     x, y = map(int, coords.strip('()').split(','))
                     msg["message"] = t.gettext("%s moved to (%d,%d)") % (user, x, y)
-
+                elif "Monster" in original and "moved one cell" in original:
+                    name = original.split(" moved")[0].replace("Monster ", "")
+                    direction = original.split(" moved one cell ")[1]
+                    msg["message"] = t.gettext("Monster %s moved one cell %s") % (name, direction)
             data = json.dumps(msg).encode() + b"\n"
             conn.send(data)
             print(f"Sent to {conn.getpeername()}: {data.decode()}")
@@ -179,9 +163,8 @@ class Game:
                 monster.x, monster.y = new_x, new_y
                 self.field[new_pos] = self.field.pop(old_pos)
                 self.send_to_all({
-                    "type": "monster_move",
-                    "name": monster.name,
-                    "direction": direction
+                    "type": "broadcast",
+                    "message": f"Monster {monster.name} moved one cell {direction}"
                 })
                 for username, (gamer_conn, gamer, _) in list(self.players.items()):
                     if gamer.get_position() == new_pos:
@@ -208,37 +191,37 @@ def schedule_monster_movement(game: Game) -> None:
 def handle_move(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the move command."""
     p = game.get_player(user)
+    t = game.get_translation(user)
     if not p:
-        return {"type": "error", "message": "Player not found"}
+        return {"type": "error", "message": t.gettext("Player not found")}
     p.move(cmd["dx"], cmd["dy"])
     x, y = p.get_position()
     m = game.field.get((x, y))
     game.send_to_all({"type": "broadcast", "message": f"{user} moved to ({x},{y})"})
     return (
         {"type": "encounter", "name": m.name, "hello": m.hello}
-        if m else {"type": "position", "x": x, "y": y}
+        if m else {"type": "position", "message": t.gettext("Moved to (%d, %d)") % (x, y)}
     )
 
 
 def handle_addmon(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the addmon command."""
+    t = game.get_translation(user)
     x, y, n, h, hp = cmd["x"], cmd["y"], cmd["name"], cmd["hello"], cmd["hp"]
     replaced = game.add_monster(x, y, n, h, hp)
     game.send_to_all({
         "type": "broadcast",
         "message": f"{user} added {n} at ({x},{y}) saying {h}"
     })
-    return {
-        "type": "added_monster",
-        "x": x,
-        "y": y,
-        "name": n,
-        "replaced": replaced
-    }
+    message = t.gettext("Added monster at (%d, %d)") % (x, y)
+    if replaced:
+        message += "\n" + t.gettext("Replaced the old monster")
+    return {"type": "added_monster", "message": message}
 
 
 def handle_attack(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the attack command."""
+    t = game.get_translation(user)
     n, dmg, w = cmd["name"], cmd["damage"], cmd.get("weapon", "unknown")
     ok, dealt, hp, dead = game.attack_monster(user, n, w, dmg)
     if ok:
@@ -247,47 +230,70 @@ def handle_attack(game: Game, user: str, cmd: Dict) -> Dict:
             f"{n} {'was killed!' if dead else f'has {hp} HP remaining.'}"
         )
         game.send_to_all({"type": "broadcast", "message": msg})
-    return {
-        "type": "attack_result",
-        "success": ok,
-        "damage": dealt,
-        "remaining_hp": hp,
-        "killed": dead
-    }
+        message = t.gettext("Attacked %s, damage %d hp") % (n, dealt)
+        if dead:
+            message += "\n" + t.gettext("%s died") % n
+        elif hp > 0:
+            message += "\n" + t.gettext("%s now has %d hp") % (n, hp)
+    else:
+        message = t.gettext("No %s here") % n
+    return {"type": "attack_result", "message": message}
 
 
 def handle_sayall(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the sayall command."""
+    t = game.get_translation(user)
     message = cmd["message"]
     game.send_to_all({"type": "broadcast", "message": f"{user}: {message}"})
-    return {"type": "sayall_result", "success": True, "message": message}
+    return {"type": "sayall_result", "message": t.gettext("Message \"%s\" sent") % message}
 
 
 def handle_timer(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the timer command."""
+    t = game.get_translation(user)
     uptime = int(game.get_uptime())
-    return {"type": "timer_result", "uptime": uptime}
+    return {"type": "timer_result", "message": t.gettext("Server uptime: %d seconds") % uptime}
 
 
 def handle_movemonsters(game: Game, user: str, cmd: Dict) -> Dict:
-    """Handle the movemonsters command to enable/disable monster movement."""
+    """Handle the movemonsters command."""
+    t = game.get_translation(user)
     state = cmd.get("state")
     if state not in ("on", "off"):
-        return {"type": "error", "message": "Invalid state: use 'on' or 'off'"}
+        return {"type": "error", "message": t.gettext("Invalid state: use 'on' or 'off'")}
     game.moving_monsters = state == "on"
-    return {"type": "movemonsters_result", "state": state}
+    return {"type": "movemonsters_result", "message": t.gettext("Moving monsters: %s") % state}
 
 
 def handle_locale(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the locale command."""
+    t = game.get_translation(user)
     locale = cmd.get("locale")
     if locale not in ["en_US", "ru_RU"]:
-        return {"type": "error", "message": f"Unsupported locale: {locale}"}
+        return {"type": "error", "message": t.gettext("Unsupported locale: %s") % locale}
     conn, gamer, _ = game.players[user]
     game.players[user] = (conn, gamer, locale)
     t = game.get_translation(user)
     print(f"Set locale for {user} to {locale}")
     return {"type": "locale_result", "message": t.gettext("Set up locale: %s") % locale}
+
+
+def handle_help(game: Game, user: str, cmd: Dict) -> Dict:
+    """Handle the help command."""
+    t = game.get_translation(user)
+    command = cmd.get("command", "")
+    commands = [
+        "attack", "help", "locale", "movemonsters", "right", "timer",
+        "addmon", "down", "left", "move", "sayall", "up", "quit", "EOF"
+    ]
+    if not command:
+        message = t.gettext("Available commands: %s") % ", ".join(commands)
+        message += "\n" + t.gettext("Type 'help <command>' for more information")
+    elif command in commands:
+        message = t.gettext(f"help_{command}")
+    else:
+        message = t.gettext("Unknown command: %s") % command
+    return {"type": "help_result", "message": message}
 
 
 COMMANDS = {
@@ -297,7 +303,8 @@ COMMANDS = {
     "sayall": handle_sayall,
     "timer": handle_timer,
     "movemonsters": handle_movemonsters,
-    "locale": handle_locale
+    "locale": handle_locale,
+    "help": handle_help
 }
 
 
@@ -325,7 +332,7 @@ def handle_client(conn: socket.socket, addr: Tuple[str, int],
                     continue
             h = COMMANDS.get(
                 cmd["type"],
-                lambda g, u, c: {"type": "error", "message": "Unknown command"}
+                lambda g, u, c: {"type": "error", "message": g.get_translation(u).gettext("Unknown command")}
             )
             res = h(game, user, cmd)
             conn.send(json.dumps(res).encode() + b"\n")
@@ -394,7 +401,7 @@ def main() -> None:
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     threading.Thread(target=start_loop, daemon=True).start()
     threading.Thread(target=schedule_monster_movement,
-                     args=(game,), daemon=True).start()
+                    args=(game,), daemon=True).start()
     try:
         sock.bind(("localhost", 12345))
         sock.listen(5)

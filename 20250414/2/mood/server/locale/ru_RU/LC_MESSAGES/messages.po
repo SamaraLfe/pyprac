@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MOOD Game 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-26 01:06+0200\n"
-"PO-Revision-Date: 2025-05-26 01:21+0200\n"
+"POT-Creation-Date: 2025-05-26 01:31+0200\n"
+"PO-Revision-Date: 2025-05-26 01:31+0200\n"
 "Last-Translator: \n"
 "Language-Team: Russian <ru@li.org>\n"
 "Language: ru_RU\n"
@@ -39,3 +39,96 @@ msgstr "Добро пожаловать, %s!"
 
 msgid "Monster %s moved one cell %s"
 msgstr "Монстр %s переместился на одну клетку %s"
+
+msgid "Moved to (%d, %d)"
+msgstr "Переместился на (%d, %d)"
+
+msgid "No %s here"
+msgstr "Здесь нет %s"
+
+msgid "Attacked %s, damage %d hp"
+msgstr "Атаковал %s, урон %d очков здоровья"
+
+msgid "%s died"
+msgstr "%s умер"
+
+msgid "%s now has %d hp"
+msgstr "У %s теперь %d очков здоровья"
+
+msgid "Added monster at (%d, %d)"
+msgstr "Добавлен монстр на (%d, %d)"
+
+msgid "Replaced the old monster"
+msgstr "Заменён старый монстр"
+
+msgid "Message \"%s\" sent"
+msgstr "Сообщение \"%s\" отправлено"
+
+msgid "Server uptime: %d seconds"
+msgstr "Время работы сервера: %d секунд"
+
+msgid "Moving monsters: %s"
+msgstr "Движение монстров: %s"
+
+msgid "Player not found"
+msgstr "Игрок не найден"
+
+msgid "Invalid state: use 'on' or 'off'"
+msgstr "Недопустимое состояние: используйте 'on' или 'off'"
+
+msgid "Unsupported locale: %s"
+msgstr "Неподдерживаемая локаль: %s"
+
+msgid "Unknown command"
+msgstr "Неизвестная команда"
+
+msgid "Available commands: %s"
+msgstr "Доступные команды: %s"
+
+msgid "Type 'help <command>' for more information"
+msgstr "Введите 'help <команда>' для получения дополнительной информации"
+
+msgid "Unknown command: %s"
+msgstr "Неизвестная команда: %s"
+
+msgid "help_attack"
+msgstr "Атаковать монстра указанным оружием.\nФормат: attack <монстр> [with <оружие>]\nПример: attack cower with sword"
+
+msgid "help_help"
+msgstr "Показать список доступных команд или помощь по конкретной команде.\nФормат: help [команда]\nПример: help attack"
+
+msgid "help_locale"
+msgstr "Установить локаль.\nФормат: locale <имя_локали>\nПример: locale ru_RU\nДоступные локали: en_US, ru_RU"
+
+msgid "help_movemonsters"
+msgstr "Включить или выключить движение монстров.\nФормат: movemonsters <on|off>\nПример: movemonsters on"
+
+msgid "help_right"
+msgstr "Переместить игрока вправо."
+
+msgid "help_timer"
+msgstr "Запросить время работы сервера.\nФормат: timer"
+
+msgid "help_addmon"
+msgstr "Добавить монстра на игровое поле.\nФормат: addmon <имя> coords <x> <y> hello <сообщение> hp <здоровье>\nПример: addmon cower coords 0 0 hello \"Moo!\" hp 100"
+
+msgid "help_down"
+msgstr "Переместить игрока вниз."
+
+msgid "help_left"
+msgstr "Переместить игрока влево."
+
+msgid "help_move"
+msgstr "Переместить игрока в указанном направлении.\nФормат: move <направление>\nНаправления: up, down, left, right\nПример: move right"
+
+msgid "help_sayall"
+msgstr "Отправить сообщение всем игрокам.\nФормат: sayall <сообщение>\nПример: sayall \"Привет, мир!\""
+
+msgid "help_up"
+msgstr "Переместить игрока вверх."
+
+msgid "help_quit"
+msgstr "Выйти из игры."
+
+msgid "help_EOF"
+msgstr "Выйти из игры (аналогично quit)."
