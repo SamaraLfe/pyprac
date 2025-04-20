@@ -10,6 +10,7 @@ import readline
 
 from ..common.models import cow_files
 
+
 class MudCmd(cmd.Cmd):
     """Command-line interface for the MOOD game client."""
     try:

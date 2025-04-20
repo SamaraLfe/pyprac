@@ -11,6 +11,7 @@ sphinx = "*"
 sphinx-autodoc-typehints = "*"
 
 [dev-packages]
+sphinx-autodoc-typehints = "*"
 
 [requires]
 python_version = "3.12"
