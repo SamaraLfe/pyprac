@@ -164,6 +164,8 @@ class MudCmd(cmd.Cmd):
             print(f"\nServer uptime: {message['uptime']} seconds")
         elif t == "monster_move":
             print(f"\nMonster {message['name']} moved one cell {message['direction']}")
+        elif t == "movemonsters_result":
+            print(f"\nMoving monsters: {message['state']}")
         elif t == "error":
             print(f"\nError: {message.get('message', 'Unknown error')}")
 
@@ -365,6 +367,32 @@ class MudCmd(cmd.Cmd):
             list[str]: Possible completions for the current input.
         """
         return []
+
+    def do_movemonsters(self, arg: str) -> None:
+        """Enable or disable moving monsters.
+
+        Args:
+            arg: Either 'on' or 'off'.
+        """
+        if arg not in ("on", "off"):
+            print("Invalid argument: use 'on' or 'off'")
+            return
+        self.send_command({"type": "movemonsters", "state": arg})
+
+    def complete_movemonsters(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+        """Provide tab completion for the movemonsters command.
+
+        Args:
+            text: The current text being typed.
+            line: The full command line.
+            begidx: The start index of the text being completed.
+            endidx: The end index of the text being completed.
+
+        Returns:
+            list[str]: Possible completions for the current input.
+        """
+        options = ["on", "off"]
+        return [opt for opt in options if opt.startswith(text)]
 
     def do_quit(self, arg: str) -> bool:
         """Quit the game.

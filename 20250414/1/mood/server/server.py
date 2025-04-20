@@ -23,13 +23,15 @@ class Game:
 
     Attributes:
         field (Dict[Tuple[int, int], Monster]):
-        Maps (x, y) coordinates to Monster objects.
+            Maps (x, y) coordinates to Monster objects.
         players (Dict[str, Tuple[socket.socket, Gamer]]):
-        Maps usernames to (connection, Gamer) tuples.
+            Maps usernames to (connection, Gamer) tuples.
         valid_monsters (list):
-        List of valid monster names from python-cowsay and jgsbat.
+            List of valid monster names from python-cowsay and jgsbat.
         start_time (float):
-        Time when the server started (Unix timestamp).
+            Time when the server started (Unix timestamp).
+        moving_monsters (bool):
+            Whether monsters can move randomly (default: True).
     """
 
     def __init__(self):
@@ -38,6 +40,7 @@ class Game:
         self.players: Dict[str, Tuple[socket.socket, Gamer]] = {}
         self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
         self.start_time = time.time()
+        self.moving_monsters = True  
 
     def get_uptime(self) -> float:
         """Calculate server uptime in seconds.
@@ -100,8 +103,8 @@ class Game:
             print(f"Send error to {conn.getpeername()}: {e}")
 
     def move_random_monster(self) -> None:
-        """Move a random monster to an adjacent cell."""
-        if not self.field:
+        """Move a random monster to an adjacent cell if moving_monsters is enabled."""
+        if not self.moving_monsters or not self.field:
             return
         directions = [
             ("right", (1, 0)),
@@ -214,12 +217,22 @@ def handle_timer(game: Game, user: str, cmd: Dict) -> Dict:
     return {"type": "timer_result", "uptime": uptime}
 
 
+def handle_movemonsters(game: Game, user: str, cmd: Dict) -> Dict:
+    """Handle the movemonsters command to enable/disable monster movement."""
+    state = cmd.get("state")
+    if state not in ("on", "off"):
+        return {"type": "error", "message": "Invalid state: use 'on' or 'off'"}
+    game.moving_monsters = state == "on"
+    return {"type": "movemonsters_result", "state": state}
+
+
 COMMANDS = {
     "move": handle_move,
     "addmon": handle_addmon,
     "attack": handle_attack,
     "sayall": handle_sayall,
-    "timer": handle_timer
+    "timer": handle_timer,
+    "movemonsters": handle_movemonsters
 }
 
 
@@ -332,3 +345,7 @@ def main() -> None:
     finally:
         sock.close()
         loop.call_soon_threadsafe(loop.stop)
+
+
+if __name__ == "__main__":
+    main()
