@@ -1,6 +1,10 @@
 """Main entry point for running the MOOD game server."""
-from .server import main
+from .server import Server
 
 
 if __name__ == "__main__":
-    main()
+    server = Server()
+    try:
+        server.start_server()
+    except KeyboardInterrupt:
+        print("Shutting down server")

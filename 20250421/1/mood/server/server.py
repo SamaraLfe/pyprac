@@ -12,6 +12,32 @@ from typing import Dict, Tuple, Optional
 from ..common.models import Monster, Gamer
 
 
+class Server:
+    """MOOD game server implementation."""
+    def __init__(self, host: str = 'localhost', port: int = 12345):
+        self.host = host
+        self.port = port
+        self.game = Game()
+        self.sock = None
+
+    def start_server(self) -> None:
+        """Start the MOOD game server."""
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        threading.Thread(target=start_loop, daemon=True).start()
+        threading.Thread(target=schedule_monster_movement, args=(self.game,), daemon=True).start()
+        try:
+            self.sock.bind((self.host, self.port))
+            self.sock.listen(5)
+            print(f"Server running on {self.host}:{self.port}")
+            accept_connections(self.sock, self.game)
+        except Exception as e:
+            print(f"Server error: {e}")
+        finally:
+            self.sock.close()
+            loop.call_soon_threadsafe(loop.stop)
+
+
 class Game:
     """Manages the game state for the MOOD server."""
     def __init__(self):
@@ -74,12 +100,12 @@ class Game:
         m = self.field.get(pos)
         if not m or m.name != name:
             return False, 0, 0, False
-        d = min(dmg, m.hp)
-        m.hp -= d
-        killed = m.hp == 0
+        d = min(dmg, m.hitpoints)
+        m.hitpoints -= d
+        killed = m.hitpoints == 0
         if killed:
             del self.field[pos]
-        return True, d, m.hp, killed
+        return True, d, m.hitpoints, killed
 
     def send_to_all(self, msg: Dict) -> None:
         """Send a message to all players with their respective locales."""
@@ -181,12 +207,10 @@ class Game:
                 break
             attempts += 1
 
-
 def schedule_monster_movement(game: Game) -> None:
     """Schedule periodic monster movement every 30 seconds."""
     game.move_random_monster()
     threading.Timer(30.0, schedule_monster_movement, args=[game]).start()
-
 
 def handle_move(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the move command."""
@@ -203,7 +227,6 @@ def handle_move(game: Game, user: str, cmd: Dict) -> Dict:
         if m else {"type": "position", "message": t.gettext("Moved to (%d, %d)") % (x, y)}
     )
 
-
 def handle_addmon(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the addmon command."""
     t = game.get_translation(user)
@@ -217,7 +240,6 @@ def handle_addmon(game: Game, user: str, cmd: Dict) -> Dict:
     if replaced:
         message += "\n" + t.gettext("Replaced the old monster")
     return {"type": "added_monster", "message": message}
-
 
 def handle_attack(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the attack command."""
@@ -239,7 +261,6 @@ def handle_attack(game: Game, user: str, cmd: Dict) -> Dict:
         message = t.gettext("No %s here") % n
     return {"type": "attack_result", "message": message}
 
-
 def handle_sayall(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the sayall command."""
     t = game.get_translation(user)
@@ -247,13 +268,11 @@ def handle_sayall(game: Game, user: str, cmd: Dict) -> Dict:
     game.send_to_all({"type": "broadcast", "message": f"{user}: {message}"})
     return {"type": "sayall_result", "message": t.gettext("Message \"%s\" sent") % message}
 
-
 def handle_timer(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the timer command."""
     t = game.get_translation(user)
     uptime = int(game.get_uptime())
     return {"type": "timer_result", "message": t.gettext("Server uptime: %d seconds") % uptime}
-
 
 def handle_movemonsters(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the movemonsters command."""
@@ -263,7 +282,6 @@ def handle_movemonsters(game: Game, user: str, cmd: Dict) -> Dict:
         return {"type": "error", "message": t.gettext("Invalid state: use 'on' or 'off'")}
     game.moving_monsters = state == "on"
     return {"type": "movemonsters_result", "message": t.gettext("Moving monsters: %s") % state}
-
 
 def handle_locale(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the locale command."""
@@ -276,7 +294,6 @@ def handle_locale(game: Game, user: str, cmd: Dict) -> Dict:
     t = game.get_translation(user)
     print(f"Set locale for {user} to {locale}")
     return {"type": "locale_result", "message": t.gettext("Set up locale: %s") % locale}
-
 
 def handle_help(game: Game, user: str, cmd: Dict) -> Dict:
     """Handle the help command."""
@@ -295,7 +312,6 @@ def handle_help(game: Game, user: str, cmd: Dict) -> Dict:
         message = t.gettext("Unknown command: %s") % command
     return {"type": "help_result", "message": message}
 
-
 COMMANDS = {
     "move": handle_move,
     "addmon": handle_addmon,
@@ -307,9 +323,7 @@ COMMANDS = {
     "help": handle_help
 }
 
-
-def handle_client(conn: socket.socket, addr: Tuple[str, int],
-                  game: Game, user: str) -> None:
+def handle_client(conn: socket.socket, addr: Tuple[str, int], game: Game, user: str) -> None:
     """Handle a client connection."""
     t = game.get_translation(user)
     conn.send(json.dumps({
@@ -342,7 +356,6 @@ def handle_client(conn: socket.socket, addr: Tuple[str, int],
         game.remove_player(user)
         game.send_to_all({"type": "broadcast", "message": f"{user} left the game!"})
         conn.close()
-
 
 def accept_connections(sock: socket.socket, game: Game) -> None:
     """Accept incoming client connections."""
@@ -384,37 +397,10 @@ def accept_connections(sock: socket.socket, game: Game) -> None:
         except Exception as e:
             print(f"Accept error: {e}")
 
-
 loop = asyncio.new_event_loop()
-
 
 def start_loop() -> None:
     """Start the asyncio event loop."""
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
-
-def main() -> None:
-    """Run the MOOD game server."""
-    game = Game()
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    threading.Thread(target=start_loop, daemon=True).start()
-    threading.Thread(target=schedule_monster_movement,
-                    args=(game,), daemon=True).start()
-    try:
-        sock.bind(("localhost", 12345))
-        sock.listen(5)
-        print("Server on localhost:12345")
-        threading.Thread(
-            target=accept_connections,
-            args=(sock, game),
-            daemon=True
-        ).start()
-        while True:
-            input()
-    except KeyboardInterrupt:
-        print("Shutting down server")
-    finally:
-        sock.close()
-        loop.call_soon_threadsafe(loop.stop)
