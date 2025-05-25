@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mood-game"
+version = "1.0.0"
+description = "Multi-User Dungeon text game"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "python-cowsay>=1.2.0",
+    "argparse>=1.4.0",
+    "babel>=2.12.1"
+]
+
+[project.scripts]
+mood-server = "mood.server.__main__:main"
+mood-client = "mood.client.__main__:main"
+
+[tool.setuptools.package-data]
+mood = [
+    "server/locales/ru/LC_MESSAGES/*.mo",
+    "docs/build/html/**/*"
+]
+
+[tool.setuptools]
+packages = ["mood", "mood.client", "mood.server"]
+package-dir = {"mood" = "mood"}

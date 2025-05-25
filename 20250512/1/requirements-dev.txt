@@ -1,0 +1,6 @@
+sphinx
+babel
+doit
+sphinx>=6.0
+sphinx-rtd-theme>=1.2
+pytest>=7.0

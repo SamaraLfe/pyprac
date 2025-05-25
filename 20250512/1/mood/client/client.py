@@ -7,6 +7,7 @@ import sys
 import threading
 import readline
 import time
+import webbrowser
 from typing import Optional, TextIO
 
 from ..common.models import cow_files
@@ -327,6 +328,24 @@ class MudCmd(cmd.Cmd):
             "addmon", "down", "left", "move", "quit", "sayall", "up"
         ]
         return [cmd for cmd in commands if cmd.startswith(text)]
+
+    def do_documentation(self, arg: str) -> None:
+        """Open generated HTML documentation in the default web browser."""
+        import os
+        doc_path = os.path.join(os.path.dirname(__file__), '..', '..', 'docs', '_build', 'html', 'index.html')
+        doc_path = os.path.abspath(doc_path)
+        if not os.path.exists(doc_path):
+            print("Documentation not found. Please run 'doit html' to generate it.")
+            return
+        try:
+            webbrowser.open(f'file://{doc_path}')
+            print("Opened documentation in browser")
+        except Exception as e:
+            print(f"Error opening documentation: {e}")
+
+    def complete_documentation(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+        """Provide tab completion for documentation command (no arguments)."""
+        return []
 
     def do_quit(self, arg: str) -> bool:
         """Quit the game."""

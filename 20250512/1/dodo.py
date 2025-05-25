@@ -50,8 +50,7 @@ def task_test():
     """Run client+server tests"""
     return {
         'actions': ['python -m unittest discover tests -v'],
-        'file_dep': ['tests/test_add_monster.py', 'tests/test_attack_monster.py',
-                     'tests/test_move_to_monster.py', 'tests/test_utils.py'],
+        'file_dep': ['test.py', 'test_client.py'],
         'task_dep': ['compile'],
         'clean': [clean_targets, lambda: [os.remove(f) for f in ['test.mood', 'test2.mood'] if os.path.exists(f)]],
     }
