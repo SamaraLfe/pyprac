@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html lang="ru" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Модуль сервера &#8212; документация Игра MOOD 1.0</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=9ca2116e"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/translations.js?v=cd1d70c9"></script>
+    <link rel="index" title="Алфавитный указатель" href="genindex.html" />
+    <link rel="search" title="Поиск" href="search.html" />
+    <link rel="prev" title="Добро пожаловать в документацию игры MOOD!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-mood.server.server">
+<span id="id1"></span><span id="server-module"></span><h1>Модуль сервера<a class="headerlink" href="#module-mood.server.server" title="Ссылка на этот заголовок">¶</a></h1>
+<p>Server implementation for the MOOD game.</p>
+<p>This module manages the game state, handles client connections, and processes player
+commands for the MOOD (Multiplayer Online Dungeon) game. It supports a 10x10 game field
+with wrapped boundaries, allowing players to move, add monsters, attack, and broadcast
+messages. Additionally, it implements wandering monsters that move every 30 seconds to a
+random adjacent cell, triggering encounters if they land on a cell with players.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="mood.server.server.Game">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">Game</span></span><a class="headerlink" href="#mood.server.server.Game" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Manages the game state for the MOOD server.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><p>field (Dict[Tuple[int, int], Monster]): Maps (x, y) coordinates to Monster objects.
+players (Dict[str, Tuple[socket.socket, Gamer]]): Maps usernames to (connection, Gamer) tuples.
+valid_monsters (list): List of valid monster names from python-cowsay and jgsbat.
+start_time (float): Time when the server started (Unix timestamp).</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mood.server.server.Game.add_monster">
+<span class="sig-name descname"><span class="pre">add_monster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hello</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#mood.server.server.Game.add_monster" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Add a monster to the game field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mood.server.server.Game.add_player">
+<span class="sig-name descname"><span class="pre">add_player</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">socket</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#mood.server.server.Game.add_player" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Add a player to the game.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mood.server.server.Game.attack_monster">
+<span class="sig-name descname"><span class="pre">attack_monster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weapon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dmg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mood.server.server.Game.attack_monster" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Handle a player attacking a monster.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mood.server.server.Game.get_player">
+<span class="sig-name descname"><span class="pre">get_player</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Gamer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#mood.server.server.Game.get_player" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Get a player’s Gamer object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mood.server.server.Game.get_uptime">
+<span class="sig-name descname"><span class="pre">get_uptime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#mood.server.server.Game.get_uptime" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Calculate server uptime in seconds.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>float: Server uptime in seconds.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mood.server.server.Game.move_random_monster">
+<span class="sig-name descname"><span class="pre">move_random_monster</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mood.server.server.Game.move_random_monster" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Move a random monster to an adjacent cell.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mood.server.server.Game.remove_player">
+<span class="sig-name descname"><span class="pre">remove_player</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#mood.server.server.Game.remove_player" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Remove a player from the game.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mood.server.server.Game.send_to_all">
+<span class="sig-name descname"><span class="pre">send_to_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mood.server.server.Game.send_to_all" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Send a message to all players.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.accept_connections">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">accept_connections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sock</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">socket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">game</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mood.server.server.Game" title="mood.server.server.Game"><span class="pre">Game</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mood.server.server.accept_connections" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Accept incoming client connections.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.handle_addmon">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">handle_addmon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mood.server.server.Game" title="mood.server.server.Game"><span class="pre">Game</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="headerlink" href="#mood.server.server.handle_addmon" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Handle the addmon command.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.handle_attack">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">handle_attack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mood.server.server.Game" title="mood.server.server.Game"><span class="pre">Game</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="headerlink" href="#mood.server.server.handle_attack" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Handle the attack command.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.handle_client">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">handle_client</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">socket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">game</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mood.server.server.Game" title="mood.server.server.Game"><span class="pre">Game</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mood.server.server.handle_client" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Handle a client connection.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.handle_move">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">handle_move</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mood.server.server.Game" title="mood.server.server.Game"><span class="pre">Game</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="headerlink" href="#mood.server.server.handle_move" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Handle the move command.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.handle_sayall">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">handle_sayall</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mood.server.server.Game" title="mood.server.server.Game"><span class="pre">Game</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="headerlink" href="#mood.server.server.handle_sayall" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Handle the sayall command.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.handle_timer">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">handle_timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mood.server.server.Game" title="mood.server.server.Game"><span class="pre">Game</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="headerlink" href="#mood.server.server.handle_timer" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Handle the timer command.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.main">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mood.server.server.main" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Run the MOOD game server.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.schedule_monster_movement">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">schedule_monster_movement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mood.server.server.Game" title="mood.server.server.Game"><span class="pre">Game</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mood.server.server.schedule_monster_movement" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Schedule periodic monster movement every 30 seconds.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mood.server.server.start_loop">
+<span class="sig-prename descclassname"><span class="pre">mood.server.server.</span></span><span class="sig-name descname"><span class="pre">start_loop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mood.server.server.start_loop" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Start the asyncio event loop.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Игра MOOD</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Искать" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Навигация</h3>
+<p class="caption" role="heading"><span class="caption-text">Содержание:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Модуль сервера</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.Game"><code class="docutils literal notranslate"><span class="pre">Game</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.accept_connections"><code class="docutils literal notranslate"><span class="pre">accept_connections()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.handle_addmon"><code class="docutils literal notranslate"><span class="pre">handle_addmon()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.handle_attack"><code class="docutils literal notranslate"><span class="pre">handle_attack()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.handle_client"><code class="docutils literal notranslate"><span class="pre">handle_client()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.handle_move"><code class="docutils literal notranslate"><span class="pre">handle_move()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.handle_sayall"><code class="docutils literal notranslate"><span class="pre">handle_sayall()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.handle_timer"><code class="docutils literal notranslate"><span class="pre">handle_timer()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.schedule_monster_movement"><code class="docutils literal notranslate"><span class="pre">schedule_monster_movement()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mood.server.server.start_loop"><code class="docutils literal notranslate"><span class="pre">start_loop()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="предыдущая глава">Добро пожаловать в документацию игры MOOD!</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Dmitry.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/server.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+
+<html lang="ru" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Добро пожаловать в документацию игры MOOD! &#8212; документация Игра MOOD 1.0</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=9ca2116e"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/translations.js?v=cd1d70c9"></script>
+    <link rel="index" title="Алфавитный указатель" href="genindex.html" />
+    <link rel="search" title="Поиск" href="search.html" />
+    <link rel="next" title="Модуль сервера" href="server.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="mood">
+<h1>Добро пожаловать в документацию игры MOOD!<a class="headerlink" href="#mood" title="Ссылка на этот заголовок">¶</a></h1>
+<p>Это документация для игры MOOD, сервер и клиент которой реализованы на Python.</p>
+<p><strong>Формулировка задачи</strong></p>
+<ul class="simple">
+<li><p>Скопировать решение Задачи_2 (где выделяются два модуля) с предыдущего занятия. Сделать коммит. Работать на ветке work.</p></li>
+<li><p>Добавить sphinx в pipenv</p></li>
+<li><dl class="simple">
+<dt>Добавить на сервере MUD поддержку бродячих монстров:</dt><dd><ul>
+<li><p>один раз в 30 секунд (первый раз - по истечении 30 секунд от старта) выбирается случайный монстр, и он перемещается на одну клетку в случайно выбранном направлении (вправо/влево/вверх/вниз; помним, что поле «закольцовано»)</p></li>
+<li><p>если в результате перемещения монстр попал бы на клетку, где уже есть монстр, то перемещение НЕ ПРОИСХОДИТ, и проводится повторный выбор монстра и направления; и так пока не будет выполнено успешное перемещение монстра</p></li>
+<li><p>при перемещении сервер выдаёт всем игрокам сообщение «&lt;имя_монстра&gt; moved one cell &lt;направление&gt;», где &lt;направление&gt; это right, left, up, down. Например: «manticore moved one cell right»</p></li>
+<li><dl class="simple">
+<dt>если монстр попадает на клетку, где есть игрок (или игроки), происходит «энкаунтер» - как если бы игрок(и) сам зашел(ли) на клетку с монстром</dt><dd><ul>
+<li><p>в т.ч. монстр отрисовывается у столкнувшихся с ним игроков, с произнесением приветственной фразы</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Для модуля-сервера задокументировать все функции, классы и модуль в формате autodoc</p></li>
+<li><dl class="simple">
+<dt>Добиться выгонки технической документации по этим классам/функциям/модулю</dt><dd><ul>
+<li><p>Следить за тем, чтобы генераты (html-документация) не хранились в git (.gitignore), а настойки shpinx — хранились</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Оформить титульный лист документации (как минимум, скопипастить туда формулировку задачи)</p></li>
+<li><p>Сделать в титульном листе ссылку на техническую документацию</p></li>
+</ul>
+<p><strong>Техническая документация</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="server.html#server-module"><span class="std std-ref">Модуль сервера</span></a></p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Содержание:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="server.html">Модуль сервера</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.Game"><code class="docutils literal notranslate"><span class="pre">Game</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.accept_connections"><code class="docutils literal notranslate"><span class="pre">accept_connections()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.handle_addmon"><code class="docutils literal notranslate"><span class="pre">handle_addmon()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.handle_attack"><code class="docutils literal notranslate"><span class="pre">handle_attack()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.handle_client"><code class="docutils literal notranslate"><span class="pre">handle_client()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.handle_move"><code class="docutils literal notranslate"><span class="pre">handle_move()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.handle_sayall"><code class="docutils literal notranslate"><span class="pre">handle_sayall()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.handle_timer"><code class="docutils literal notranslate"><span class="pre">handle_timer()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.schedule_monster_movement"><code class="docutils literal notranslate"><span class="pre">schedule_monster_movement()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html#mood.server.server.start_loop"><code class="docutils literal notranslate"><span class="pre">start_loop()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">Игра MOOD</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Искать" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Навигация</h3>
+<p class="caption" role="heading"><span class="caption-text">Содержание:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="server.html">Модуль сервера</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="server.html" title="следующая глава">Модуль сервера</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Dmitry.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
