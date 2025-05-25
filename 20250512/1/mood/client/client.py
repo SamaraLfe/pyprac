@@ -1,3 +1,9 @@
+"""Client module for the MOOD game.
+
+This module implements the command-line interface and network communication
+for the MOOD game client, allowing players to interact with the game server.
+"""
+
 import socket
 import cmd
 import shlex
@@ -264,7 +270,8 @@ class MudCmd(cmd.Cmd):
             "damage": self.weapons[weapon]
         })
 
-    def complete_attack(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+    def complete_attack(self, text: str, line: str,
+                        begidx: int, endidx: int) -> list[str]:
         """Provide tab completion for attack."""
         args = shlex.split(line[:begidx])
         if len(args) <= 1:

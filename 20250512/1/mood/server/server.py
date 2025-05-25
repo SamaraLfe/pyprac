@@ -1,3 +1,9 @@
+"""Server module for the MOOD game.
+
+This module implements the server-side logic for the MOOD game, handling
+client connections, game state management, and message processing.
+"""
+
 import socket
 import json
 import random
@@ -15,6 +21,13 @@ from ..common.models import Monster, Gamer
 class Server:
     """MOOD game server implementation."""
     def __init__(self, host: str = 'localhost', port: int = 12345):
+        """Initialize the MOOD game server.
+
+        Args:
+            host (str): The hostname or IP address
+                        to bind the server to (default: 'localhost').
+            port (int): The port number to listen on (default: 12345).
+        """
         self.host = host
         self.port = port
         self.game = Game()
@@ -42,6 +55,10 @@ class Server:
 class Game:
     """Manages the game state for the MOOD server."""
     def __init__(self):
+        """Initialize the MOOD game state.
+
+        Sets up the game field, player management, and translation support.
+        """
         self.field: Dict[Tuple[int, int], Monster] = {}
         self.players: Dict[str, Tuple[socket.socket, Gamer, str]] = {}
         self.valid_monsters = cowsay.list_cows() + ["jgsbat"]
