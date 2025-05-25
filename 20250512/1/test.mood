@@ -1,0 +1,7 @@
+sayall "I M HERE"
+ move right 
+move down 
+addmon jgsbat coords 5 5 hello "Greetings!" hp 50 
+sayall "Hello everyone!" 
+timer 
+attack jgsbat
