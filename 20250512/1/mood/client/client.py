@@ -22,8 +22,10 @@ class MudCmd(cmd.Cmd):
         weapons (dict): Mapping of weapon names to their damage values.
         sock (Optional[socket.socket]): Socket for server communication.
         connected (bool): Indicates if the client is connected to the server.
-        receiver_thread (Optional[threading.Thread]): Thread for receiving server messages.
-        last_command_time (float): Timestamp of the last sent command for delay enforcement.
+        receiver_thread (Optional[threading.Thread]):
+        Thread for receiving server messages.
+        last_command_time (float):
+        Timestamp of the last sent command for delay enforcement.
     """
     try:
         prompt = "(" + sys.argv[1] + ") "
@@ -132,8 +134,8 @@ class MudCmd(cmd.Cmd):
         if t == "broadcast":
             print(f"\n[BROADCAST] {message.get('message')}")
         elif t in ("position", "attack_result", "added_monster", "sayall_result",
-                   "timer_result", "monster_move", "movemonsters_result", "locale_result",
-                   "help_result"):
+                   "timer_result", "monster_move", "movemonsters_result",
+                   "locale_result", "help_result"):
             print(f"\n{message.get('message')}")
         elif t == "encounter":
             print("\n" + cowsay.cowsay(
@@ -219,7 +221,8 @@ class MudCmd(cmd.Cmd):
                     print("Invalid arguments")
                     return
             if not all(k in params for k in ("hello", "hp", "x", "y")) or \
-               params["hp"] <= 0 or not (0 <= params["x"] <= 9 and 0 <= params["y"] <= 9):
+               params["hp"] <= 0 or not \
+                    (0 <= params["x"] <= 9 and 0 <= params["y"] <= 9):
                 print("Invalid parameters")
                 return
             self.send_command({
@@ -233,7 +236,8 @@ class MudCmd(cmd.Cmd):
         except ValueError:
             print("Invalid arguments")
 
-    def complete_addmon(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+    def complete_addmon(self, text: str, line: str,
+                        begidx: int, endidx: int) -> list[str]:
         """Provide tab completion for addmon."""
         args = shlex.split(line[:begidx])
         if len(args) == 1:
@@ -267,7 +271,7 @@ class MudCmd(cmd.Cmd):
             return [m for m in self.valid_monsters if m.startswith(text)]
         if len(args) == 2:
             return ["with"] if "with".startswith(text) else []
-        if len(args) == 3 and args[1] == "with":
+        if len(args) == 3 and args[2] == "with":
             return [w for w in self.weapons if w.startswith(text)]
         return []
 
@@ -287,7 +291,8 @@ class MudCmd(cmd.Cmd):
             return
         self.send_command({"type": "timer"})
 
-    def complete_timer(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+    def complete_timer(self, text: str, line: str,
+                       begidx: int, endidx: int) -> list[str]:
         """Provide tab completion for timer."""
         return []
 
@@ -298,7 +303,8 @@ class MudCmd(cmd.Cmd):
             return
         self.send_command({"type": "movemonsters", "state": arg})
 
-    def complete_movemonsters(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+    def complete_movemonsters(self, text: str, line: str,
+                              begidx: int, endidx: int) -> list[str]:
         """Provide tab completion for movemonsters."""
         options = ["on", "off"]
         return [opt for opt in options if opt.startswith(text)]
@@ -312,7 +318,8 @@ class MudCmd(cmd.Cmd):
         locale_name = parts[0]
         self.send_command({"type": "locale", "locale": locale_name})
 
-    def complete_locale(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+    def complete_locale(self, text: str, line: str,
+                        begidx: int, endidx: int) -> list[str]:
         """Provide tab completion for locale."""
         locales = ["en_US", "ru_RU"]
         return [loc for loc in locales if loc.startswith(text)]
@@ -321,7 +328,8 @@ class MudCmd(cmd.Cmd):
         """Request help from the server."""
         self.send_command({"type": "help", "command": arg.strip()})
 
-    def complete_help(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+    def complete_help(self, text: str, line: str,
+                      begidx: int, endidx: int) -> list[str]:
         """Provide tab completion for help."""
         commands = [
             "EOF", "attack", "help", "locale", "movemonsters", "right", "timer",
@@ -332,7 +340,8 @@ class MudCmd(cmd.Cmd):
     def do_documentation(self, arg: str) -> None:
         """Open generated HTML documentation in the default web browser."""
         import os
-        doc_path = os.path.join(os.path.dirname(__file__), '..', '..', 'docs', '_build', 'html', 'index.html')
+        doc_path = os.path.join(os.path.dirname(__file__), '..', '..',
+                                'docs', '_build', 'html', 'index.html')
         doc_path = os.path.abspath(doc_path)
         if not os.path.exists(doc_path):
             print("Documentation not found. Please run 'doit html' to generate it.")
@@ -343,7 +352,8 @@ class MudCmd(cmd.Cmd):
         except Exception as e:
             print(f"Error opening documentation: {e}")
 
-    def complete_documentation(self, text: str, line: str, begidx: int, endidx: int) -> list[str]:
+    def complete_documentation(self, text: str, line: str,
+                               begidx: int, endidx: int) -> list[str]:
         """Provide tab completion for documentation command (no arguments)."""
         return []
 
