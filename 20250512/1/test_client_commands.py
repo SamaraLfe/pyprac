@@ -7,11 +7,10 @@ from mood.client.client import MudCmd
 def client():
     """Создание клиента с замоканными вводом и сокетом."""
     username = "test_user"
-    # Создаём клиент, но предотвращаем вызов connect
     with patch.object(MudCmd, 'connect', return_value=True):
         client = MudCmd(username)
         client.connected = True
-        client.sock = Mock()  # Мокаем сокет
+        client.sock = Mock()
         return client
 
 def test_addmon_valid_input_1(client):
@@ -31,14 +30,14 @@ def test_addmon_valid_input_1(client):
 
 def test_addmon_valid_input_2(client):
     """Проверка преобразования команды addmon с другими параметрами."""
-    with patch('builtins.input', side_effect=['addmon dragon coords 3 4 hello "Roar!" hp 100']):
-        client.do_addmon('dragon coords 3 4 hello "Roar!" hp 100')
+    with patch('builtins.input', side_effect=['addmon milk coords 3 4 hello "Roar!" hp 100']):
+        client.do_addmon('milk coords 3 4 hello "Roar!" hp 100')
         client.sock.send.assert_called_with(
             json.dumps({
                 "type": "addmon",
                 "x": 3,
                 "y": 4,
-                "name": "dragon",
+                "name": "milk",
                 "hello": "Roar!",
                 "hp": 100
             }).encode() + b"\n"
@@ -67,12 +66,12 @@ def test_attack_valid_input_1(client):
 
 def test_attack_valid_input_2(client):
     """Проверка преобразования команды attack с копьём."""
-    with patch('builtins.input', side_effect=['attack beavis with spear']):
-        client.do_attack('beavis with spear')
+    with patch('builtins.input', side_effect=['attack milk with spear']):
+        client.do_attack('milk with spear')
         client.sock.send.assert_called_with(
             json.dumps({
                 "type": "attack",
-                "name": "beavis",
+                "name": "milk",
                 "weapon": "spear",
                 "damage": 15
             }).encode() + b"\n"

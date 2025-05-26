@@ -53,14 +53,7 @@ def task_test():
             'pipenv run pytest test_server_commands.py -v',
             'pipenv run pytest test_client_commands.py -v'
         ],
-        'file_dep': [
-            'test_server_commands.py',
-            'test_client_commands.py',
-            'mood/server/server.py',
-            'mood/client/client.py',
-            'mood/common/models.py'
-        ],
-        'task_dep': ['compile'],
+        'task_dep': ['i18n'],
         'clean': [clean_targets],
     }
 
@@ -80,6 +73,6 @@ def task_wheel():
             'mood/common/__init__.py',
             'mood/server/locale/ru_RU/LC_MESSAGES/messages.mo'
         ],
-        'targets': ['dist/*.whl'],  
+        'targets': ['dist/*.whl'],
         'clean': [clean_targets, lambda: shutil.rmtree('dist', ignore_errors=True), lambda: shutil.rmtree('build', ignore_errors=True)],
     }
