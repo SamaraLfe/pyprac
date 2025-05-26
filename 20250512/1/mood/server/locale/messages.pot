@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-05-26 05:10+0300\n"
+"POT-Creation-Date: 2025-05-26 06:27+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,125 +17,125 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: mood/server/server.py:129
+#: mood/server/server.py:150
 #, python-format
 msgid "%s added %s at (%d,%d) saying %s"
 msgstr ""
 
-#: mood/server/server.py:132
+#: mood/server/server.py:155
 #, python-format
 msgid "%s joined the game!"
 msgstr ""
 
-#: mood/server/server.py:135
+#: mood/server/server.py:158
 #, python-format
 msgid "%s left the game!"
 msgstr ""
 
-#: mood/server/server.py:141 mood/server/server.py:148
+#: mood/server/server.py:165 mood/server/server.py:174
 #, python-format
 msgid "%s attacked %s with %s, dealing %d damage. %s was killed!"
 msgid_plural "%s attacked %s with %s, dealing %d damage. %s has %d HP remaining."
 msgstr[0] ""
 msgstr[1] ""
 
-#: mood/server/server.py:155
+#: mood/server/server.py:183
 #, python-format
 msgid "%s moved to (%d,%d)"
 msgstr ""
 
-#: mood/server/server.py:159
+#: mood/server/server.py:187
 #, python-format
 msgid "Monster %s moved one cell %s"
 msgstr ""
 
-#: mood/server/server.py:220
+#: mood/server/server.py:251
 msgid "Player not found"
-msgstr ""
-
-#: mood/server/server.py:227
-#, python-format
-msgid "Moved to (%d, %d)"
-msgstr ""
-
-#: mood/server/server.py:239
-#, python-format
-msgid "Added monster at (%d, %d)"
-msgstr ""
-
-#: mood/server/server.py:241
-msgid "Replaced the old monster"
-msgstr ""
-
-#: mood/server/server.py:255
-#, python-format
-msgid "Attacked %s, damage %d hp"
-msgstr ""
-
-#: mood/server/server.py:257
-#, python-format
-msgid "%s died"
 msgstr ""
 
 #: mood/server/server.py:259
 #, python-format
-msgid "%s now has %d hp"
+msgid "Moved to (%d, %d)"
 msgstr ""
 
-#: mood/server/server.py:261
+#: mood/server/server.py:272
 #, python-format
-msgid "No %s here"
+msgid "Added monster at (%d, %d)"
 msgstr ""
 
-#: mood/server/server.py:269
+#: mood/server/server.py:274
+msgid "Replaced the old monster"
+msgstr ""
+
+#: mood/server/server.py:289
 #, python-format
-msgid "Message \"%s\" sent"
-msgstr ""
-
-#: mood/server/server.py:275
-#, python-format
-msgid "Server uptime: %d seconds"
-msgstr ""
-
-#: mood/server/server.py:282
-msgid "Invalid state: use 'on' or 'off'"
-msgstr ""
-
-#: mood/server/server.py:284
-#, python-format
-msgid "Moving monsters: %s"
+msgid "Attacked %s, damage %d hp"
 msgstr ""
 
 #: mood/server/server.py:291
 #, python-format
+msgid "%s died"
+msgstr ""
+
+#: mood/server/server.py:293
+#, python-format
+msgid "%s now has %d hp"
+msgstr ""
+
+#: mood/server/server.py:295
+#, python-format
+msgid "No %s here"
+msgstr ""
+
+#: mood/server/server.py:305
+#, python-format
+msgid "Message \"%s\" sent"
+msgstr ""
+
+#: mood/server/server.py:313
+#, python-format
+msgid "Server uptime: %d seconds"
+msgstr ""
+
+#: mood/server/server.py:322
+msgid "Invalid state: use 'on' or 'off'"
+msgstr ""
+
+#: mood/server/server.py:325
+#, python-format
+msgid "Moving monsters: %s"
+msgstr ""
+
+#: mood/server/server.py:334
+#, python-format
 msgid "Unsupported locale: %s"
 msgstr ""
 
-#: mood/server/server.py:296
+#: mood/server/server.py:339
 #, python-format
 msgid "Set up locale: %s"
 msgstr ""
 
-#: mood/server/server.py:307
+#: mood/server/server.py:351
 #, python-format
 msgid "Available commands: %s"
 msgstr ""
 
-#: mood/server/server.py:308
+#: mood/server/server.py:352
 msgid "Type 'help <command>' for more information"
 msgstr ""
 
-#: mood/server/server.py:312
+#: mood/server/server.py:356
 #, python-format
 msgid "Unknown command: %s"
 msgstr ""
 
-#: mood/server/server.py:331
+#: mood/server/server.py:378
 #, python-format
 msgid "Welcome, %s!"
 msgstr ""
 
-#: mood/server/server.py:349
+#: mood/server/server.py:398
 msgid "Unknown command"
 msgstr ""
 
