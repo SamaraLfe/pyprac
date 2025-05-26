@@ -53,7 +53,14 @@ def task_test():
             'pipenv run pytest test_server_commands.py -v',
             'pipenv run pytest test_client_commands.py -v'
         ],
-        'task_dep': ['i18n'],
+        'file_dep': [
+            'test_server_commands.py',
+            'test_client_commands.py',
+            'mood/server/server.py',
+            'mood/client/client.py',
+            'mood/common/models.py'
+        ],
+        'task_dep': ['compile'],
         'clean': [clean_targets],
     }
 
