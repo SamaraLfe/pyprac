@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "7989c80a96ef375fb361d0a5fb89a4df0d66fa29262eb217070661cea2705cf1"
+            "sha256": "273be56ded95e5ef5bf7165b7b5c0b349bb448e99974f53a8df73b71f5f41df5"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -23,13 +23,6 @@
             ],
             "markers": "python_version >= '3.10'",
             "version": "==1.0.0"
-        },
-        "argparse": {
-            "hashes": [
-                "sha256:62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4",
-                "sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314"
-            ],
-            "version": "==1.4.0"
         },
         "babel": {
             "hashes": [
@@ -302,12 +295,6 @@
             ],
             "markers": "python_version >= '3.6'",
             "version": "==0.7.0"
-        },
-        "mood-game": {
-            "file": "dist/mood_game-1.0.0-py3-none-any.whl",
-            "hashes": [
-                "sha256:d0bd7538c38876b8a7fb215038821d8dcad04aa9c48ea549eb3635b9644c1376"
-            ]
         },
         "packaging": {
             "hashes": [
