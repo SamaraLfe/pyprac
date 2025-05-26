@@ -10,6 +10,7 @@ pydocstyle = "*"
 sphinx = "*"
 babel = "*"
 doit = "*"
+pytest = "*"
 
 [dev-packages]
 

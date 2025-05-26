@@ -33,7 +33,7 @@ def task_compile():
 def task_i18n():
     """Generate translations"""
     return {
-        'actions': [],  # Пустой список действий
+        'actions': [],
         'task_dep': ['extract', 'update', 'compile'],
     }
 
@@ -47,11 +47,19 @@ def task_html():
     }
 
 def task_test():
-    """Run client+server tests"""
+    """Run pytest-based tests for server and client"""
     return {
-        'actions': ['python -m unittest discover tests -v'],
-        'file_dep': ['tests/test_add_monster.py', 'tests/test_attack_monster.py',
-                     'tests/test_move_to_monster.py', 'tests/test_utils.py'],
+        'actions': [
+            'pipenv run pytest test_server_commands.py -v',
+            'pipenv run pytest test_client_commands.py -v'
+        ],
+        'file_dep': [
+            'test_server_commands.py',
+            'test_client_commands.py',
+            'mood/server/server.py',
+            'mood/client/client.py',
+            'mood/common/models.py'
+        ],
         'task_dep': ['compile'],
-        'clean': [clean_targets, lambda: [os.remove(f) for f in ['test.mood', 'test2.mood'] if os.path.exists(f)]],
+        'clean': [clean_targets],
     }
