@@ -10,6 +10,7 @@ pytest = "*"
 build = "*"
 python-cowsay = "*"
 mood-game = {file = "dist/mood_game-1.0.0-py3-none-any.whl"}
+doit = "*"
 
 [dev-packages]
 
