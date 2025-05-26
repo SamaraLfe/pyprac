@@ -63,3 +63,23 @@ def task_test():
         'task_dep': ['compile'],
         'clean': [clean_targets],
     }
+
+def task_wheel():
+    """Build a Wheel distribution for client and server"""
+    return {
+        'actions': ['python -m build --wheel'],
+        'file_dep': [
+            'pyproject.toml',
+            'mood/client/client.py',
+            'mood/client/__init__.py',
+            'mood/client/__main__.py',
+            'mood/server/server.py',
+            'mood/server/__init__.py',
+            'mood/server/__main__.py',
+            'mood/common/models.py',
+            'mood/common/__init__.py',
+            'mood/server/locale/ru_RU/LC_MESSAGES/messages.mo'
+        ],
+        'targets': ['dist/*.whl'],  
+        'clean': [clean_targets, lambda: shutil.rmtree('dist', ignore_errors=True), lambda: shutil.rmtree('build', ignore_errors=True)],
+    }
